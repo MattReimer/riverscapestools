@@ -10,7 +10,7 @@ import re
 from setuptools import setup
 
 install_requires = [
-    'argparse', 'urllib2'
+    'argparse'
 ]
 
 version = re.search(
