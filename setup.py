@@ -7,5 +7,5 @@ setup(name='rspupload',
       author='Matt Reimer',
       author_email='matt@northarrowresearch.com',
       license='MIT',
-      packages=['rsupload'],
+      packages=['rspupload'],
       zip_safe=False)
