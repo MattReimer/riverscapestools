@@ -15,3 +15,5 @@
 .idea/dynamic.xml
 .idea/uiDesigner.xml
 gs
+
+*.egg-info

@@ -1,14 +1,16 @@
-import argparse
-import sys
 import os
 import subprocess
 import time
+import argparse
+import sys
 from os import path
+
+__version__ = "0.2.0"
 
 import xml.etree.ElementTree as ET
 from userinput import query_yes_no
 
-def main(args):
+def rspupload(args):
     """
     :param inputRas:
     :param maskRas:
@@ -139,12 +141,7 @@ def treeprint(rootDir, first=True):
             treeprint(path, False)
 
 
-
-"""
-This handles the argument parsing and calls our main function
-If we're not calling this from the command line then
-"""
-if __name__ == '__main__':
+def main():
     # parse command line options
     parser = argparse.ArgumentParser()
 
@@ -163,3 +160,10 @@ if __name__ == '__main__':
         print 'Unxexpected error: {0}'.format(sys.exc_info()[0])
         raise
         sys.exit(0)
+
+"""
+This handles the argument parsing and calls our main function
+If we're not calling this from the command line then
+"""
+if __name__ == '__main__':
+    main()

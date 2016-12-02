@@ -1,11 +1,35 @@
+# -*- coding: utf-8 -*-
+
+"""setup.py: setuptools control."""
+import re
 from setuptools import setup
 
-setup(name='rspupload',
-      version='0.1',
+install_requires = [
+    'argparse',
+]
+
+version = re.search(
+      '^__version__\s*=\s*"(.*)"',
+      open('rspupload/rspupload.py').read(),
+      re.M
+).group(1)
+
+with open("README.md", "rb") as f:
+      long_descr = f.read().decode("utf-8")
+
+setup(
+      name='rspupload',
       description='A Riverscapes Uploader tool',
       url='https://github.com/Riverscapes/rspupload',
       author='Matt Reimer',
       author_email='matt@northarrowresearch.com',
       license='MIT',
       packages=['rspupload'],
-      zip_safe=False)
+      zip_safe=False,
+      install_requires=install_requires,
+      entry_points={
+            "console_scripts": ['rspupload = rspupload.rspupload:main']
+      },
+      version=version,
+      long_description=long_descr,
+)
