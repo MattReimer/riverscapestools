@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """setup.py: setuptools control."""
+"""
+A Lot of this methodology was "borrowed" from
+    - https://github.com/jgehrcke/python-cmdline-bootstrap/blob/master/bootstrap/bootstrap.py
+"""
+
 import re
 from setuptools import setup
 
