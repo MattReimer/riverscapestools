@@ -1,14 +1,16 @@
 import os
 import subprocess
 import time
+import urllib2
 import argparse
 import sys
-from os import path
-
-__version__ = "0.2.0"
-
+import re
 import xml.etree.ElementTree as ET
+from os import path
 from userinput import query_yes_no
+
+__version__ = "0.0.1"
+
 
 def rspupload(args):
     """
@@ -16,9 +18,21 @@ def rspupload(args):
     :param maskRas:
     :return:
     """
+    projectET = None
+    if re.match('^https*:\/\/.*', args.program) is not None:
+        try:
+            file = urllib2.urlopen(args.program)
+            data = file.read()
+            file.close()
+            programET = ET.fromstring(data)
+        except:
+            raise "ERROR: Could not download <https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml>"
+    else:
+        programET = ET.parse(args.program).getroot()
+
     printTitle('STARTING PYTHON UPLOADER', "=")
-    programET = ET.parse(args.program.name).getroot()
-    projectET = ET.parse(args.project.name).getroot()
+    projectET = ET.parse(args.project).getroot()
+
 
     projectRoot = path.dirname(path.abspath(args.project.name))
     remotePath = GetPath(projectET, programET)
@@ -149,13 +163,13 @@ def main():
                         help='Path to the project XML file.',
                         type=argparse.FileType('r'))
 
-    parser.add_argument('--program', type=argparse.FileType('r'), default=path.join('xml', 'Sample_Program.xml'),
-                        help='Path to the Program XML file (optional)')
+    parser.add_argument('--program', default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
+                        help='Path or url to the Program XML file (optional)')
 
     args = parser.parse_args()
 
     try:
-        main(args)
+        rspupload(args)
     except:
         print 'Unxexpected error: {0}'.format(sys.exc_info()[0])
         raise

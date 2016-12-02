@@ -10,7 +10,7 @@ import re
 from setuptools import setup
 
 install_requires = [
-    'argparse',
+    'argparse', 'urllib2'
 ]
 
 version = re.search(
@@ -33,7 +33,7 @@ setup(
       zip_safe=False,
       install_requires=install_requires,
       entry_points={
-            "console_scripts": ['rspupload = rspupload.rspupload:main']
+            "console_scripts": ['rspupload = rspupload:main']
       },
       version=version,
       long_description=long_descr,
