@@ -79,7 +79,7 @@ def GetPath(project, program):
 
     # Now go get the product node from the program XML
     patharr = findprojpath(projType, program)
-    assert patharr is not None,  "ERROR: Product '{0}' not found anywhere in the program XML".format()
+    assert patharr is not None,  "ERROR: Product '{0}' not found anywhere in the program XML".format(projType)
     printTitle("Building Path to Product: ".format(projType))
 
     extpath = 's3://{0}'.format(bucketname)
