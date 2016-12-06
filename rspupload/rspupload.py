@@ -5,12 +5,15 @@ import urllib2
 import argparse
 import sys
 import re
+import boto3
 import xml.etree.ElementTree as ET
 from os import path
 from userinput import query_yes_no
+from botohelper import s3FolderUpload, treeprint
 
 __version__ = "0.0.1"
 
+s3 = boto3.client('s3')
 
 def rspupload(args):
     """
@@ -26,7 +29,7 @@ def rspupload(args):
             file.close()
             programET = ET.fromstring(data)
         except:
-            raise "ERROR: Could not download <https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml>"
+            raise ValueError("ERROR: Could not download <{0}>".format(args.program))
     else:
         programET = ET.parse(args.program).getroot()
 
@@ -35,30 +38,33 @@ def rspupload(args):
 
 
     projectRoot = path.dirname(path.abspath(args.project.name))
-    remotePath = GetPath(projectET, programET)
+    bucket = getBucket(programET)
+    remotePath = getPath(projectET, programET)
 
-    printTitle('Creating AWS command:')
-    cmd = ["aws", "s3", "sync", projectRoot, remotePath]
-    print ' '.join(cmd)
+    # printTitle('Creating AWS command:')
+    # cmd = ["aws", "s3", "sync", projectRoot, remotePath]
+    # print ' '.join(cmd)
 
     printTitle('The following files will be uploaded:')
     treeprint(projectRoot)
 
-    print "\nThese files will be uploaded to: {0}\n".format(remotePath)
+    print "\nThese files will be uploaded to: s3://{0}/{1}\n".format(bucket, remotePath)
     result = query_yes_no("ARE YOU SURE?")
 
     if result:
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while process.poll() is None:
-            for line in process.stdout:
-                print line
-            time.sleep(0.5)
+        s3FolderUpload(bucket, projectRoot, remotePath)
     else:
         print "\n<EXITING> No sync performed\n"
 
+def getBucket(program):
+    try:
+        bucketname = program.find("MetaData/Meta[@name='s3bucket']").text
+        print "S3 Bucket Detected: {0}".format(bucketname)
+    except:
+        raise ValueError("ERROR: No <Meta Name='s3bucket'>riverscapes</Meta> tag found in program XML")
+    return bucketname
 
-def GetPath(project, program):
+def getPath(project, program):
     """
     Figure out what the repository path should be
     :param project:
@@ -71,18 +77,13 @@ def GetPath(project, program):
     projType = project.find('.//ProjectType').text
     assert not _strnullorempty(projType), "ERROR: <ProjectType> not found in project XML."
     print "Project Type Detected: {0}".format(projType)
-    try:
-        bucketname = program.find("MetaData/Meta[@name='s3bucket']").text
-        print "S3 Bucket Detected: {0}".format(bucketname)
-    except:
-        raise "ERROR: No <Meta Name='s3bucket'>riverscapes</Meta> tag found in program XML"
 
     # Now go get the product node from the program XML
     patharr = findprojpath(projType, program)
     assert patharr is not None,  "ERROR: Product '{0}' not found anywhere in the program XML".format(projType)
     printTitle("Building Path to Product: ".format(projType))
 
-    extpath = 's3://{0}'.format(bucketname)
+    extpath = ''
     for idx, seg in enumerate(patharr):
         if 'Level' in seg:
             lvl= getlvl(seg['Level'], project)
@@ -94,7 +95,11 @@ def GetPath(project, program):
         elif 'Project' in seg:
             print "{0}/Project:{1}".format(idx * '  ', seg['Project'])
             extpath += '/' + seg['Project']
-    print "\n Final path to product: {0}".format(extpath)
+
+    # Trim the first slash for consistency elsewhere
+    if len(extpath) > 0 and extpath[0] == '/':
+        extpath = extpath[1:]
+    print "\n Final remote path to product: {0}".format(extpath)
 
     return extpath
 
@@ -107,9 +112,8 @@ def getlvl(lvlname, project):
     """
     try:
         val = project.find("MetaData/Meta[@name='{0}']".format(lvlname)).text
-        raise
-    except:
-        "ERROR: Could not find <Meta name='{0}'>########</Meta> tag in project XML".format(lvlname)
+    except AttributeError:
+        raise ValueError("ERROR: Could not find <Meta name='{0}'>########</Meta> tag in project XML".format(lvlname))
     return val
 
 def findprojpath(projname, etNode, path=[]):
@@ -141,18 +145,6 @@ def _strnullorempty(str):
 def printTitle(str, sep='-'):
     print "\n{0}\n{1}".format(str, (len(str) + 2) * sep )
 
-def treeprint(rootDir, first=True):
-    if first:
-        print rootDir + '/'
-    currentdir = rootDir
-    for lists in os.listdir(rootDir):
-        spaces = len(currentdir) * ' ' + '/'
-        path = os.path.join(rootDir, lists)
-        if os.path.isfile(path):
-            print spaces + lists
-        elif os.path.isdir(path):
-            print spaces + lists + '/'
-            treeprint(path, False)
 
 
 def main():

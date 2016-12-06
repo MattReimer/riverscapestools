@@ -10,7 +10,7 @@ import re
 from setuptools import setup
 
 install_requires = [
-    'argparse'
+    'argparse', 'boto3', 'botocore'
 ]
 
 version = re.search(
