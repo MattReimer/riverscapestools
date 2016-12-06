@@ -1,5 +1,6 @@
 from rspupload import *
-
+from botohelper import s3ProductWalker
+from loghelper import *
 
 def rsplist(args):
     """
@@ -22,13 +23,15 @@ def rsplist(args):
         programET = ET.parse(args.program).getroot()
 
 
-    printTitle('STARTING PYTHON LISTER', "=")
+    printTitle('STARTING Project Lister', "=")
 
     bucket = getBucket(programET)
-    logprint("Found bucket: {0}".format(bucket) )
     remotePath = getPathFromName(args.projectname, programET)
 
-    print "yo"
+    printTitle('Walking through and finding projects:')
+    s3ProductWalker(bucket, remotePath)
+
+    logprint("Done")
 
 
 def getPathFromName(projType, program):
@@ -38,7 +41,7 @@ def getPathFromName(projType, program):
     :param program:
     :return:
     """
-    printTitle('Getting remote path...')
+    printTitle('Getting remote path structure...')
 
     # First let's get the project type
     assert not _strnullorempty(projType), "ERROR: <ProjectType> not found in project XML."
@@ -64,7 +67,6 @@ def getPathFromName(projType, program):
     # Trim the first slash for consistency elsewhere
     if len(extpath) > 0 and extpath[0] == '/':
         extpath = extpath[1:]
-    logprint("Final remote path to product: {0}".format(extpath))
 
     return extpath
 

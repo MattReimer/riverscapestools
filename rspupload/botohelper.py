@@ -9,6 +9,9 @@ from loghelper import logprint
 import hashlib
 from progressbar import ProgressBar
 
+# Get the service client
+s3 = boto3.client('s3')
+
 class ProgressPercentage(object):
     def __init__(self, filename):
         self._filename = filename
@@ -65,6 +68,45 @@ def treeprint(rootDir, first=True):
             treeprint(path, False)
 
 
+def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
+    """
+    Given a path array, ending in a Product, snake through the
+    S3 bucket recursively and list all the products available
+    :param patharr:
+    :param path:
+    :param currlevel:
+    :return:
+    """
+    if currlevel >= len(patharr):
+        return
+
+    # If it's a level then we need to iterate over folders and recurse on each
+    if 'Level' in patharr[currlevel]:
+        # list everything at this level
+        pref = "/".join(currpath)+"/" if len(currpath) > 0 else ""
+        result = s3.list_objects(Bucket=bucket, Prefix=pref, Delimiter='/')
+        if 'CommonPrefixes' in result:
+            for o in result.get('CommonPrefixes'):
+                s3ProductWalker(bucket, patharr, o.get('Prefix')[:-1].split('/'), currlevel + 1)
+        else:
+            return
+
+    # If it's a container then no iteration necessary. Just append the path and recurse
+    elif 'Container' in patharr[currlevel]:
+        currpath.append(patharr[currlevel]['Container'])
+        s3ProductWalker(bucket, patharr, currpath, currlevel + 1)
+
+    # If it's a project then get the XML file and print it
+    elif 'Project' in patharr[currlevel]:
+        currpath.append(patharr[currlevel]['Project'])
+        result = s3.list_objects(Bucket=bucket, Prefix="/".join(currpath)+"/", Delimiter='/')
+        if 'Contents' in result:
+            for c in result['Contents']:
+                if os.path.splitext(c['Key'])[1] == '.xml':
+                    logprint('Project: {0} (Modified: {1})'.format(c['Key'], c['LastModified']))
+        return
+
+
 def s3FolderUpload(bucket, localroot, remotepath, relpath=""):
     """
     Recurse through a folder and upload all the files in it
@@ -91,8 +133,6 @@ def s3FileUpload(bucket, key, filepath):
     :param filepath:
     :return:
     """
-    # Get the service client
-    s3 = boto3.client('s3')
     etag = None
     upload = False
     try:
