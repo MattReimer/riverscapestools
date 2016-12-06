@@ -100,7 +100,7 @@ def getPath(project, program):
     # Trim the first slash for consistency elsewhere
     if len(extpath) > 0 and extpath[0] == '/':
         extpath = extpath[1:]
-        logprint("Final remote path to product: {0}".format(extpath))
+    logprint("Final remote path to product: {0}".format(extpath))
 
     return extpath
 
