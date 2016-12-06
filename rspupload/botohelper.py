@@ -4,6 +4,8 @@ import os
 import boto3
 import botocore
 import math
+import logging
+from loghelper import logprint
 import hashlib
 from progressbar import ProgressBar
 
@@ -51,15 +53,15 @@ def treeprint(rootDir, first=True):
     :return:
     """
     if first:
-        print rootDir + '/'
+        logprint(rootDir + '/')
     currentdir = rootDir
     for lists in os.listdir(rootDir):
         spaces = len(currentdir) * ' ' + '/'
         path = os.path.join(rootDir, lists)
         if os.path.isfile(path):
-            print spaces + lists
+            logprint(spaces + lists)
         elif os.path.isdir(path):
-            print spaces + lists + '/'
+            logprint(spaces + lists + '/')
             treeprint(path, False)
 
 
@@ -113,11 +115,12 @@ def s3FileUpload(bucket, key, filepath):
             upload = True
 
     if upload:
-        print "Uploading: {0} ==> s3://{1}/{2}".format(filepath, bucket, key)
+        logprint("Uploading: {0} ==> s3://{1}/{2}".format(filepath, bucket, key))
         s3.upload_file(filepath, bucket, key, Callback=ProgressPercentage(filepath))
+        logging.info("Upload Completed: {0}".format(filepath))
         print ""
     else:
-        print "Same. Doing nothing: {0} = s3://{1}/{2}".format(filepath, bucket, key)
+        logprint("Same. Doing nothing: {0} = s3://{1}/{2}".format(filepath, bucket, key))
 
 
 # Shortcut to MD5

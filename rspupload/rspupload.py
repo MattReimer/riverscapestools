@@ -1,15 +1,14 @@
-import os
-import subprocess
-import time
 import urllib2
 import argparse
 import sys
 import re
+import time
 import boto3
 import xml.etree.ElementTree as ET
 from os import path
 from userinput import query_yes_no
 from botohelper import s3FolderUpload, treeprint
+from loghelper import *
 
 __version__ = "0.0.1"
 
@@ -21,6 +20,7 @@ def rspupload(args):
     :param maskRas:
     :return:
     """
+    setuplogs(args.logfile)
     projectET = None
     if re.match('^https*:\/\/.*', args.program) is not None:
         try:
@@ -29,39 +29,40 @@ def rspupload(args):
             file.close()
             programET = ET.fromstring(data)
         except:
-            raise ValueError("ERROR: Could not download <{0}>".format(args.program))
+            err = "ERROR: Could not download <{0}>".format(args.program)
+            logging.error(err)
+            raise ValueError(err)
     else:
         programET = ET.parse(args.program).getroot()
 
+
     printTitle('STARTING PYTHON UPLOADER', "=")
     projectET = ET.parse(args.project).getroot()
-
 
     projectRoot = path.dirname(path.abspath(args.project.name))
     bucket = getBucket(programET)
     remotePath = getPath(projectET, programET)
 
-    # printTitle('Creating AWS command:')
-    # cmd = ["aws", "s3", "sync", projectRoot, remotePath]
-    # print ' '.join(cmd)
-
     printTitle('The following files will be uploaded:')
     treeprint(projectRoot)
 
-    print "\nThese files will be uploaded to: s3://{0}/{1}\n".format(bucket, remotePath)
+    logprint("\nThese files will be uploaded to: s3://{0}/{1}\n".format(bucket, remotePath))
+    time.sleep(0.25)
     result = query_yes_no("ARE YOU SURE?")
 
     if result:
         s3FolderUpload(bucket, projectRoot, remotePath)
     else:
-        print "\n<EXITING> No sync performed\n"
+        logprint("\n<EXITING> No sync performed\n")
 
 def getBucket(program):
     try:
         bucketname = program.find("MetaData/Meta[@name='s3bucket']").text
-        print "S3 Bucket Detected: {0}".format(bucketname)
+        logprint("S3 Bucket Detected: {0}".format(bucketname))
     except:
-        raise ValueError("ERROR: No <Meta Name='s3bucket'>riverscapes</Meta> tag found in program XML")
+        msg = "ERROR: No <Meta Name='s3bucket'>riverscapes</Meta> tag found in program XML"
+        logging.error(msg)
+        raise ValueError(msg)
     return bucketname
 
 def getPath(project, program):
@@ -76,7 +77,7 @@ def getPath(project, program):
     # First let's get the project type
     projType = project.find('.//ProjectType').text
     assert not _strnullorempty(projType), "ERROR: <ProjectType> not found in project XML."
-    print "Project Type Detected: {0}".format(projType)
+    logprint("Project Type Detected: {0}".format(projType))
 
     # Now go get the product node from the program XML
     patharr = findprojpath(projType, program)
@@ -87,19 +88,19 @@ def getPath(project, program):
     for idx, seg in enumerate(patharr):
         if 'Level' in seg:
             lvl= getlvl(seg['Level'], project)
-            print "{0}/Level:{1} => {2}".format(idx*'  ', seg['Level'], lvl)
+            logprint("{0}/Level:{1} => {2}".format(idx*'  ', seg['Level'], lvl))
             extpath += '/' + lvl
         elif 'Container' in seg:
-            print "{0}/Container:{1}".format(idx * '  ', seg['Container'])
+            logprint("{0}/Container:{1}".format(idx * '  ', seg['Container']))
             extpath += '/' + seg['Container']
         elif 'Project' in seg:
-            print "{0}/Project:{1}".format(idx * '  ', seg['Project'])
+            logprint("{0}/Project:{1}".format(idx * '  ', seg['Project']))
             extpath += '/' + seg['Project']
 
     # Trim the first slash for consistency elsewhere
     if len(extpath) > 0 and extpath[0] == '/':
         extpath = extpath[1:]
-    print "\n Final remote path to product: {0}".format(extpath)
+        logprint("Final remote path to product: {0}".format(extpath))
 
     return extpath
 
@@ -143,23 +144,22 @@ def _strnullorempty(str):
     return str is None or len(str.strip()) == 0
 
 def printTitle(str, sep='-'):
-    print "\n{0}\n{1}".format(str, (len(str) + 2) * sep )
-
+    logprint("\n{0}\n{1}".format(str, (len(str) + 2) * sep ))
 
 
 def main():
     # parse command line options
     parser = argparse.ArgumentParser()
-
     parser.add_argument('project',
                         help='Path to the project XML file.',
                         type=argparse.FileType('r'))
-
-    parser.add_argument('--program', default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
+    parser.add_argument('--program',
+                        default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
                         help='Path or url to the Program XML file (optional)')
-
+    parser.add_argument('--logfile',
+                        default='',
+                        help='Write the results of the operation to a specified logfile (optional)')
     args = parser.parse_args()
-
     try:
         rspupload(args)
     except:

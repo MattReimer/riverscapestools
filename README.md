@@ -24,5 +24,5 @@ optional arguments:
 **NB:** Even though this installation uses pip you need to use git to clone it from github. This means that you need to make sure git is in your PATH for whatever command-line environement you use
 
 ```bash
-pip install https://github.com/Riverscapes/rspupload.git
+pip install git+https://github.com/Riverscapes/rspupload.git
 ```
