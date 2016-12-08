@@ -8,10 +8,12 @@ import xml.etree.ElementTree as ET
 from os import path
 from userinput import query_yes_no
 from botohelper import s3FolderUpload, treeprint
-from loghelper import *
+from loghelper import Logger
+from program import Program
+from project import Project
 
 __version__ = "0.0.1"
-
+# Initialize logger.
 s3 = boto3.client('s3')
 
 def rspupload(args):
@@ -20,131 +22,45 @@ def rspupload(args):
     :param maskRas:
     :return:
     """
-    setuplogs(args.logfile)
+    log = Logger('Program')
     projectET = None
     if re.match('^https*:\/\/.*', args.program) is not None:
         try:
-            file = urllib2.urlopen(args.program)
+            request = urllib2.Request(args.program)
+            request.add_header('Pragma', 'no-cache')
+            file = urllib2.build_opener().open(request)
             data = file.read()
             file.close()
             programET = ET.fromstring(data)
         except:
             err = "ERROR: Could not download <{0}>".format(args.program)
-            logging.error(err)
+            log.error(err)
             raise ValueError(err)
     else:
         programET = ET.parse(args.program).getroot()
 
-
-    printTitle('STARTING PYTHON UPLOADER', "=")
-    projectET = ET.parse(args.project).getroot()
+    programObj = Program(programET)
 
     projectRoot = path.dirname(path.abspath(args.project.name))
-    bucket = getBucket(programET)
-    remotePath = getPath(projectET, programET)
+    projectET = ET.parse(args.project).getroot()
+    projectObj = Project(projectET, projectRoot)
 
-    printTitle('The following files will be uploaded:')
+    log.title('STARTING PYTHON UPLOADER', "=")
+
+    remotePath = projectObj.getPath(programObj)
+
+    log.title('The following files will be uploaded:')
     treeprint(projectRoot)
 
-    logprint("\nThese files will be uploaded to: s3://{0}/{1}\n".format(bucket, remotePath))
+    log.info("\nThese files will be uploaded to: s3://{0}/{1}\n".format(programObj.Bucket, remotePath))
     time.sleep(0.25)
     result = query_yes_no("ARE YOU SURE?")
 
     if result:
-        s3FolderUpload(bucket, projectRoot, remotePath)
+        s3FolderUpload(programObj.Bucket, projectObj.LocalRoot, remotePath)
     else:
-        logprint("\n<EXITING> No sync performed\n")
+        log.info("\n<EXITING> No sync performed\n")
 
-def getBucket(program):
-    try:
-        bucketname = program.find("MetaData/Meta[@name='s3bucket']").text
-        logprint("S3 Bucket Detected: {0}".format(bucketname))
-    except:
-        msg = "ERROR: No <Meta Name='s3bucket'>riverscapes</Meta> tag found in program XML"
-        logging.error(msg)
-        raise ValueError(msg)
-    return bucketname
-
-def getPath(project, program):
-    """
-    Figure out what the repository path should be
-    :param project:
-    :param program:
-    :return:
-    """
-    printTitle('Getting remote path...')
-
-    # First let's get the project type
-    projType = project.find('.//ProjectType').text
-    assert not _strnullorempty(projType), "ERROR: <ProjectType> not found in project XML."
-    logprint("Project Type Detected: {0}".format(projType))
-
-    # Now go get the product node from the program XML
-    patharr = findprojpath(projType, program)
-    assert patharr is not None,  "ERROR: Product '{0}' not found anywhere in the program XML".format(projType)
-    printTitle("Building Path to Product: ".format(projType))
-
-    extpath = ''
-    for idx, seg in enumerate(patharr):
-        if 'Level' in seg:
-            lvl= getlvl(seg['Level'], project)
-            logprint("{0}/Level:{1} => {2}".format(idx*'  ', seg['Level'], lvl))
-            extpath += '/' + lvl
-        elif 'Container' in seg:
-            logprint("{0}/Container:{1}".format(idx * '  ', seg['Container']))
-            extpath += '/' + seg['Container']
-        elif 'Project' in seg:
-            logprint("{0}/Project:{1}".format(idx * '  ', seg['Project']))
-            extpath += '/' + seg['Project']
-
-    # Trim the first slash for consistency elsewhere
-    if len(extpath) > 0 and extpath[0] == '/':
-        extpath = extpath[1:]
-    logprint("Final remote path to product: {0}".format(extpath))
-
-    return extpath
-
-def getlvl(lvlname, project):
-    """
-    Try to pull the level out of the project file
-    :param lvlname: string with the level we're looking for
-    :param project: the ET node with the project xml
-    :return:
-    """
-    try:
-        val = project.find("MetaData/Meta[@name='{0}']".format(lvlname)).text
-    except AttributeError:
-        raise ValueError("ERROR: Could not find <Meta name='{0}'>########</Meta> tag in project XML".format(lvlname))
-    return val
-
-def findprojpath(projname, etNode, path=[]):
-    """
-    Find the path to the desired project
-    :param projname:
-    :param etNode:
-    :param path:
-    :return:
-    """
-    proj = etNode.find('Product[@id="{0}"]'.format(projname))
-    children = etNode.findall('*')
-    if proj is not None:
-        path.append({'Project': proj.attrib['folder']})
-        return path
-    elif children is not None:
-        for c in children:
-            if 'name' in etNode.attrib:
-                newpath = path[:]
-                newpath.append({etNode.tag: etNode.attrib['name']})
-                result = findprojpath(projname, c, newpath)
-                if result is not None:
-                    return result
-
-
-def _strnullorempty(str):
-    return str is None or len(str.strip()) == 0
-
-def printTitle(str, sep='-'):
-    logprint("\n{0}\n{1}".format(str, (len(str) + 2) * sep ))
 
 
 def main():
@@ -159,13 +75,27 @@ def main():
     parser.add_argument('--logfile',
                         default='',
                         help='Write the results of the operation to a specified logfile (optional)')
+    parser.add_argument('--verbose',
+                        help = 'Get more information in your logs.',
+                        action='store_true',
+                        default=False )
     args = parser.parse_args()
+
+    log = Logger("Program")
+    if len(args.logfile) > 0:
+        log.setup(logfile=args.logfile,
+                  verbose=args.verbose)
+
     try:
         rspupload(args)
-    except:
-        print 'Unxexpected error: {0}'.format(sys.exc_info()[0])
+    except AssertionError as e:
+        log.error("Assertion Error", e)
+        sys.exit(0)
+    except Exception as e:
+        log.error('Unexpected error: {0}'.format(sys.exc_info()[0]), e)
         raise
         sys.exit(0)
+
 
 """
 This handles the argument parsing and calls our main function

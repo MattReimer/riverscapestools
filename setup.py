@@ -33,7 +33,7 @@ setup(
       zip_safe=False,
       install_requires=install_requires,
       entry_points={
-            "console_scripts": ['rspupload = rspupload:main', 'rsplist = rsplist:main']
+            "console_scripts": ['rspupload = rspupload:main', 'rsplist = rspupload.rsplist:main']
       },
       version=version,
       long_description=long_descr,

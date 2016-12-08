@@ -4,8 +4,7 @@ import os
 import boto3
 import botocore
 import math
-import logging
-from loghelper import logprint
+from loghelper import Logger
 import hashlib
 from progressbar import ProgressBar
 
@@ -55,16 +54,17 @@ def treeprint(rootDir, first=True):
     :param first:
     :return:
     """
+    log = Logger('TreePrint')
     if first:
-        logprint(rootDir + '/')
+        log.info(rootDir + '/')
     currentdir = rootDir
     for lists in os.listdir(rootDir):
         spaces = len(currentdir) * ' ' + '/'
         path = os.path.join(rootDir, lists)
         if os.path.isfile(path):
-            logprint(spaces + lists)
+            log.info(spaces + lists)
         elif os.path.isdir(path):
-            logprint(spaces + lists + '/')
+            log.info(spaces + lists + '/')
             treeprint(path, False)
 
 
@@ -77,12 +77,13 @@ def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
     :param currlevel:
     :return:
     """
+    log = Logger('ProductWalk')
     if currlevel >= len(patharr):
         return
 
-    # If it's a level then we need to iterate over folders and recurse on each
-    if 'Level' in patharr[currlevel]:
-        # list everything at this level
+    # If it's a collection then we need to iterate over folders and recurse on each
+    if 'Collection' in patharr[currlevel]:
+        # list everything at this collection
         pref = "/".join(currpath)+"/" if len(currpath) > 0 else ""
         result = s3.list_objects(Bucket=bucket, Prefix=pref, Delimiter='/')
         if 'CommonPrefixes' in result:
@@ -92,8 +93,8 @@ def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
             return
 
     # If it's a container then no iteration necessary. Just append the path and recurse
-    elif 'Container' in patharr[currlevel]:
-        currpath.append(patharr[currlevel]['Container'])
+    elif 'Group' in patharr[currlevel]:
+        currpath.append(patharr[currlevel]['Group'])
         s3ProductWalker(bucket, patharr, currpath, currlevel + 1)
 
     # If it's a project then get the XML file and print it
@@ -103,7 +104,7 @@ def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
         if 'Contents' in result:
             for c in result['Contents']:
                 if os.path.splitext(c['Key'])[1] == '.xml':
-                    logprint('Project: {0} (Modified: {1})'.format(c['Key'], c['LastModified']))
+                    log.info('Project: {0} (Modified: {1})'.format(c['Key'], c['LastModified']))
         return
 
 
@@ -130,9 +131,10 @@ def s3FileUpload(bucket, key, filepath):
     Just upload one file using Boto3
     :param bucket:
     :param key:
-    :param filepath:
+    :param filepath:Y
     :return:
     """
+    log = Logger('FileUpload')
     etag = None
     upload = False
     try:
@@ -155,12 +157,12 @@ def s3FileUpload(bucket, key, filepath):
             upload = True
 
     if upload:
-        logprint("Uploading: {0} ==> s3://{1}/{2}".format(filepath, bucket, key))
+        log.info("Uploading: {0} ==> s3://{1}/{2}".format(filepath, bucket, key))
         s3.upload_file(filepath, bucket, key, Callback=ProgressPercentage(filepath))
-        logging.info("Upload Completed: {0}".format(filepath))
+        log.info("Upload Completed: {0}".format(filepath))
         print ""
     else:
-        logprint("Same. Doing nothing: {0} = s3://{1}/{2}".format(filepath, bucket, key))
+        log.info("Same. Doing nothing: {0} = s3://{1}/{2}".format(filepath, bucket, key))
 
 
 # Shortcut to MD5
