@@ -12,63 +12,19 @@ from loghelper import Logger
 from program import Program
 from project import Project
 
-__version__ = "0.0.1"
-# Initialize logger.
-s3 = boto3.client('s3')
 
-def rspupload(args):
-    """
-    :param inputRas:
-    :param maskRas:
-    :return:
-    """
-    log = Logger('Program')
-    projectET = None
-    if re.match('^https*:\/\/.*', args.program) is not None:
-        try:
-            request = urllib2.Request(args.program)
-            request.add_header('Pragma', 'no-cache')
-            file = urllib2.build_opener().open(request)
-            data = file.read()
-            file.close()
-            programET = ET.fromstring(data)
-        except:
-            err = "ERROR: Could not download <{0}>".format(args.program)
-            log.error(err)
-            raise ValueError(err)
-    else:
-        programET = ET.parse(args.program).getroot()
-
-    programObj = Program(programET)
-
-    projectRoot = path.dirname(path.abspath(args.project.name))
-    projectET = ET.parse(args.project).getroot()
-    projectObj = Project(projectET, projectRoot)
-
-    log.title('STARTING PYTHON UPLOADER', "=")
-
-    remotePath = projectObj.getPath(programObj)
-
-    log.title('The following files will be uploaded:')
-    treeprint(projectRoot)
-
-    log.info("\nThese files will be uploaded to: s3://{0}/{1}\n".format(programObj.Bucket, remotePath))
-    time.sleep(0.25)
-    result = query_yes_no("ARE YOU SURE?")
-
-    if result:
-        s3FolderUpload(programObj.Bucket, projectObj.LocalRoot, remotePath)
-    else:
-        log.info("\n<EXITING> No sync performed\n")
-
+def rspdownload(args):
+    print "hu"
 
 
 def main():
     # parse command line options
     parser = argparse.ArgumentParser()
-    parser.add_argument('project',
+    parser.add_argument('somevar',
                         help='Path to the project XML file.',
                         type=argparse.FileType('r'))
+    parser.add_argument('--localroot',
+                        help='Local path to the root of the program on your local drive')
     parser.add_argument('--program',
                         default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
                         help='Path or url to the Program XML file (optional)')
@@ -103,3 +59,6 @@ If we're not calling this from the command line then
 """
 if __name__ == '__main__':
     main()
+
+
+

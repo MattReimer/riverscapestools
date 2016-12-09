@@ -15,7 +15,7 @@ install_requires = [
 
 version = re.search(
       '^__version__\s*=\s*"(.*)"',
-      open('rspupload/rspupload.py').read(),
+      open('riverscapestools/__version__.py').read(),
       re.M
 ).group(1)
 
@@ -23,17 +23,19 @@ with open("README.md", "rb") as f:
       long_descr = f.read().decode("utf-8")
 
 setup(
-      name='rspupload',
+      name='riverscapestools',
       description='A Riverscapes Uploader tool',
       url='https://github.com/Riverscapes/rspupload',
       author='Matt Reimer',
       author_email='matt@northarrowresearch.com',
       license='MIT',
-      packages=['rspupload'],
+      packages=['riverscapestools'],
       zip_safe=False,
       install_requires=install_requires,
       entry_points={
-            "console_scripts": ['rspupload = rspupload:main', 'rsplist = rspupload.rsplist:main']
+            "console_scripts": ['rspupload = riverscapestools.rspupload:main',
+                                'rsplist = riverscapestools.rsplist:main',
+                                'rspdownload = riverscapestools.rspdownload:main']
       },
       version=version,
       long_description=long_descr,
