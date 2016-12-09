@@ -82,7 +82,7 @@ def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
         return
 
     # If it's a collection then we need to iterate over folders and recurse on each
-    if 'Collection' in patharr[currlevel]:
+    if patharr[currlevel]['type'] == 'collection':
         # list everything at this collection
         pref = "/".join(currpath)+"/" if len(currpath) > 0 else ""
         result = s3.list_objects(Bucket=bucket, Prefix=pref, Delimiter='/')
@@ -93,13 +93,13 @@ def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
             return
 
     # If it's a container then no iteration necessary. Just append the path and recurse
-    elif 'Group' in patharr[currlevel]:
-        currpath.append(patharr[currlevel]['Group'])
+    elif patharr[currlevel]['type'] == 'group':
+        currpath.append(patharr[currlevel]['folder'])
         s3ProductWalker(bucket, patharr, currpath, currlevel + 1)
 
     # If it's a project then get the XML file and print it
-    elif 'Project' in patharr[currlevel]:
-        currpath.append(patharr[currlevel]['Project'])
+    elif patharr[currlevel]['type'] == 'product':
+        currpath.append(patharr[currlevel]['folder'])
         result = s3.list_objects(Bucket=bucket, Prefix="/".join(currpath)+"/", Delimiter='/')
         if 'Contents' in result:
             for c in result['Contents']:

@@ -1,4 +1,5 @@
-from logging import Logger
+from loghelper import Logger
+import re
 
 class Program():
 
@@ -20,12 +21,82 @@ class Program():
     def parseCollections(self):
         for col in self.DOM.findall('Definitions/Collections/Collection'):
             self.Collections[col.attrib['id']] = {
-                'name': col.attrib['name']
+                'id': col.attrib['id'],
+                'type': 'collection',
+                'name': col.attrib['name'],
+                'allows': self.parseCollectionAllowed(col.findall('Allow'))
             }
+
+    def parseCollectionAllowed(self, allowETs):
+        allows = []
+        for allow in allowETs:
+            if 'pattern' in allow.attrib:
+                allows.append({
+                    'type': 'pattern',
+                    'pattern': allow.attrib['pattern'],
+                })
+            else:
+                allows.append({
+                    'type': 'fixed',
+                    'name': allow.attrib['name'],
+                    'folder': allow.attrib['folder']
+                })
+        return allows
+
+    def testAllowedCollection(self, colName, desiredName):
+        """
+        Test if this is a valid collection to ask for
+        :param collection:
+        :param colName:
+        :return:
+        """
+        collection = self.Collections[colName]
+        if len(collection['allows']) == 0:
+            return True
+
+        assert len(desiredName) > 0, "ERROR: Desired collection name for collection {0} is empty.".format(collection['name'])
+
+        bGood = False
+        for allow in collection['allows']:
+            if allow['type'] == 'pattern':
+                try:
+                    matchObj = re.match(allow['pattern'], desiredName)
+                    if matchObj:
+                        bGood = True
+                        continue
+                except Exception as e:
+                    self.log.error("Something went wrong with the allow RegEx in the Program XML file", e)
+            else:
+                if allow['name'] == desiredName:
+                    bGood = True
+                    continue
+
+        assert bGood, "ERROR: Desired Collection: {0} did not pass the allowed values test for collection: {1}".format(desiredName, collection['name'])
+        return bGood
+
+    def getAllowedLookup(self, colName, desiredName):
+        """
+        Get the actual allowed name. Most of the time this is just what you pass in
+        but in the case of non-pattern allows this will do a lookup
+        :param collection:
+        :param colName:
+        :return:
+        """
+        if len(self.Collections[colName]['allows']) == 0:
+            return desiredName
+
+        name = desiredName
+        for allow in self.Collections[colName]['allows']:
+            if allow['type'] == 'fixed' and allow['name'] == desiredName:
+                name = allow['folder']
+                continue
+        return name
 
     def parseGroups(self):
         for grp in self.DOM.findall('Definitions/Groups/Group'):
             self.Groups[grp.attrib['id']] = {
+                'id': grp.attrib['id'],
+                'type': 'group',
                 'name': grp.attrib['name'],
                 'folder': grp.attrib['folder']
             }
@@ -33,6 +104,8 @@ class Program():
     def parseProducts(self):
         for prod in self.DOM.findall('Definitions/Products/Product'):
             self.Products[prod.attrib['id']] = {
+                'id': prod.attrib['id'],
+                'type': 'product',
                 'name': prod.attrib['name'],
                 'folder': prod.attrib['folder']
             }
@@ -71,6 +144,21 @@ class Program():
             self.log.error(msg)
             raise ValueError(msg)
 
+    def getProdPath(self, prodName):
+
+        self.log.title('Getting remote path structure...')
+
+        # First let's get the project type
+        assert not _strnullorempty(prodName), "ERROR: <ProjectType> not found in project XML."
+        self.log.info("Project Type Detected: {0}".format(prodName))
+
+        # Now go get the product node from the program XML
+        patharr = self.findprojpath(prodName)
+        assert patharr is not None, "ERROR: Product '{0}' not found anywhere in the program XML".format(prodName)
+        self.log.title("Building Path to Product: ".format(prodName))
+
+        return patharr
+
     def findprojpath(self, prodname, node=None, path=[]):
         """
         Find the path to the desired project
@@ -83,17 +171,18 @@ class Program():
             node = self.Hierarchy
 
         if node['type'] == 'product' and node['node']['name'] == prodname:
-            path.append({'product': node['node']['folder']})
+            path.append(node['node'])
             return path
         elif node['type'] in ['group', 'collection']:
 
             newpath = path[:]
-            if node['type'] == 'collection':
-                newpath.append({node['type']: node['node']['name']})
-            else:
-                newpath.append({node['type']: node['node']['folder']})
+            newpath.append(node['node'])
 
             for child in node['children']:
                 result = self.findprojpath(prodname, child, newpath)
                 if result is not None:
                     return result
+
+
+def _strnullorempty(str):
+    return str is None or len(str.strip()) == 0

@@ -1,37 +1,38 @@
-2016-12-08 13:58:43 INFO     [Program        ] 
+2016-12-08 16:56:12 INFO     
 STARTING PYTHON UPLOADER
 ==========================
-2016-12-08 13:58:43 INFO     [Project        ] 
+2016-12-08 16:56:12 INFO     
 Getting remote path...
 ------------------------
-2016-12-08 13:58:43 INFO     [Project        ] Project Type Detected: FHM
-2016-12-08 13:58:43 INFO     [Project        ] 
+2016-12-08 16:56:12 INFO     Project Type Detected: FHM
+2016-12-08 16:56:12 INFO     
 Building Path to Product: 
 ----------------------------
-2016-12-08 13:58:43 INFO     [Project        ] /collection:Region => REGION1
-2016-12-08 13:58:43 INFO     [Project        ]   /collection:Watershed => Asotin
-2016-12-08 13:58:43 INFO     [Project        ]     /group:Site
-2016-12-08 13:58:43 INFO     [Project        ]       /collection:Site => ASC123123-SOMESITE
-2016-12-08 13:58:43 INFO     [Project        ]         /collection:Visit => VISIT_1029
-2016-12-08 13:58:43 INFO     [Project        ]           /collection:Year => 2012
-2016-12-08 13:58:43 INFO     [Project        ]             /group:Flow
-2016-12-08 13:58:43 INFO     [Project        ]               /collection:Site => ASC123123-SOMESITE
-2016-12-08 13:58:43 INFO     [Project        ]                 /product:FHM
-2016-12-08 13:58:43 INFO     [Project        ] Final remote path to product: REGION1/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM
-2016-12-08 13:58:43 INFO     [Program        ] 
+2016-12-08 16:56:12 INFO     /collection:Region => CRB
+2016-12-08 16:56:12 INFO       /collection:Watershed => Asotin
+2016-12-08 16:56:12 INFO         /group:Site
+2016-12-08 16:56:12 INFO           /collection:Site => ASC123123-SOMESITE
+2016-12-08 16:56:12 INFO             /collection:Visit => VISIT_1029
+2016-12-08 16:56:12 INFO               /collection:Year => 2012
+2016-12-08 16:56:12 INFO                 /group:Flow
+2016-12-08 16:56:12 INFO                   /collection:Site => ASC123123-SOMESITE
+2016-12-08 16:56:12 INFO                     /product:FHM
+2016-12-08 16:56:12 INFO     Final remote path to product: CRB/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM
+2016-12-08 16:56:12 INFO     
 The following files will be uploaded:
 ---------------------------------------
-2016-12-08 13:58:43 INFO     [TreePrint      ] /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/
-2016-12-08 13:58:43 INFO     [TreePrint      ]                                                                            /fhm_project.xml
-2016-12-08 13:58:43 INFO     [TreePrint      ]                                                                            /folder1/
-2016-12-08 13:58:43 INFO     [TreePrint      ]                                                                                    /textfile1.txt
-2016-12-08 13:58:43 INFO     [TreePrint      ]                                                                            /folder2/
-2016-12-08 13:58:43 INFO     [TreePrint      ]                                                                                    /textfile2.txt
-2016-12-08 13:58:43 INFO     [TreePrint      ]                                                                            /log.log
-2016-12-08 13:58:43 INFO     [Program        ] 
-These files will be uploaded to: s3://riverscapesdata/REGION1/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM
+2016-12-08 16:56:12 INFO     /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/
+2016-12-08 16:56:12 INFO                                                                                /fhm_project.xml
+2016-12-08 16:56:12 INFO                                                                                /folder1/
+2016-12-08 16:56:12 INFO                                                                                        /textfile1.txt
+2016-12-08 16:56:12 INFO                                                                                /folder2/
+2016-12-08 16:56:12 INFO                                                                                        /textfile2.txt
+2016-12-08 16:56:12 INFO                                                                                /log.log
+2016-12-08 16:56:12 INFO     
+These files will be uploaded to: s3://riverscapesdata/CRB/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM
 
-2016-12-08 13:58:52 INFO     [FileUpload     ] Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/fhm_project.xml = s3://riverscapesdata/REGION1/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/fhm_project.xml
-2016-12-08 13:58:52 INFO     [FileUpload     ] Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/folder1/textfile1.txt = s3://riverscapesdata/REGION1/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/folder1/textfile1.txt
-2016-12-08 13:58:52 INFO     [FileUpload     ] Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/folder2/textfile2.txt = s3://riverscapesdata/REGION1/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/folder2/textfile2.txt
-2016-12-08 13:58:52 INFO     [FileUpload     ] Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/log.log = s3://riverscapesdata/REGION1/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/log.log
+2016-12-08 16:56:20 INFO     Starting new HTTPS connection (1): riverscapesdata.s3.amazonaws.com
+2016-12-08 16:56:21 INFO     Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/fhm_project.xml = s3://riverscapesdata/CRB/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/fhm_project.xml
+2016-12-08 16:56:21 INFO     Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/folder1/textfile1.txt = s3://riverscapesdata/CRB/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/folder1/textfile1.txt
+2016-12-08 16:56:21 INFO     Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/folder2/textfile2.txt = s3://riverscapesdata/CRB/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/folder2/textfile2.txt
+2016-12-08 16:56:21 INFO     Same. Doing nothing: /Users/matt/Projects/nar/RiverScapes/rspupload/rspupload/test/SampleProject/log.log = s3://riverscapesdata/CRB/Asotin/Site/ASC123123-SOMESITE/VISIT_1029/2012/Flow/ASC123123-SOMESITE/FHM/log.log

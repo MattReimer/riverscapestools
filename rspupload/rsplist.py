@@ -1,6 +1,7 @@
 from rspupload import *
 from botohelper import s3ProductWalker
-from loghelper import *
+from loghelper import Logger
+from program import Program
 
 def rsplist(args):
     """
@@ -8,71 +9,34 @@ def rsplist(args):
     :param maskRas:
     :return:
     """
-    setuplogs(args.logfile)
+    log = Logger('Program')
+    projectET = None
     if re.match('^https*:\/\/.*', args.program) is not None:
         try:
-            file = urllib2.urlopen(args.program)
+            request = urllib2.Request(args.program)
+            request.add_header('Pragma', 'no-cache')
+            file = urllib2.build_opener().open(request)
             data = file.read()
             file.close()
             programET = ET.fromstring(data)
         except:
             err = "ERROR: Could not download <{0}>".format(args.program)
-            logging.error(err)
+            log.error(err)
             raise ValueError(err)
     else:
         programET = ET.parse(args.program).getroot()
 
+    programObj = Program(programET)
 
-    printTitle('STARTING Project Lister', "=")
+    log.title('STARTING Project Lister', "=")
 
-    bucket = getBucket(programET)
-    remotePath = getPathFromName(args.projectname, programET)
+    remotePath = programObj.getProdPath(args.projectname)
 
-    printTitle('Walking through and finding projects:')
-    s3ProductWalker(bucket, remotePath)
+    log.title('Walking through and finding projects:')
+    s3ProductWalker(programObj.Bucket, remotePath)
 
-    logprint("Done")
+    log.title("Done")
 
-
-def getPathFromName(projType, program):
-    """
-    Figure out what the repository path should be
-    :param project:
-    :param program:
-    :return:
-    """
-    printTitle('Getting remote path structure...')
-
-    # First let's get the project type
-    assert not _strnullorempty(projType), "ERROR: <ProjectType> not found in project XML."
-    logprint("Project Type Detected: {0}".format(projType))
-
-    # Now go get the product node from the program XML
-    patharr = findprojpath(projType, program)
-    assert patharr is not None,  "ERROR: Product '{0}' not found anywhere in the program XML".format(projType)
-    printTitle("Building Path to Product: ".format(projType))
-
-    extpath = []
-    for idx, seg in enumerate(patharr):
-        if 'Level' in seg:
-            logprint("{0}/Level:{1}".format(idx*'  ', seg['Level']))
-            extpath.append({'Level': seg['Level']})
-        elif 'Container' in seg:
-            logprint("{0}/Container:{1}".format(idx * '  ', seg['Container']))
-            extpath.append({'Container': seg['Container']})
-        elif 'Project' in seg:
-            logprint("{0}/Project:{1}".format(idx * '  ', seg['Project']))
-            extpath.append({'Project': seg['Project']})
-
-    # Trim the first slash for consistency elsewhere
-    if len(extpath) > 0 and extpath[0] == '/':
-        extpath = extpath[1:]
-
-    return extpath
-
-
-def _strnullorempty(str):
-    return str is None or len(str.strip()) == 0
 
 def main():
     # parse command line options
@@ -86,11 +50,24 @@ def main():
     parser.add_argument('--logfile',
                         default='',
                         help='Write the results of the operation to a specified logfile (optional)')
+    parser.add_argument('--verbose',
+                        help = 'Get more information in your logs.',
+                        action='store_true',
+                        default=False )
     args = parser.parse_args()
+
+    log = Logger("Program")
+    if len(args.logfile) > 0:
+        log.setup(logfile=args.logfile,
+                  verbose=args.verbose)
+
     try:
         rsplist(args)
-    except:
-        print 'Unxexpected error: {0}'.format(sys.exc_info()[0])
+    except AssertionError as e:
+        log.error("Assertion Error", e)
+        sys.exit(0)
+    except Exception as e:
+        log.error('Unexpected error: {0}'.format(sys.exc_info()[0]), e)
         raise
         sys.exit(0)
 

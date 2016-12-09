@@ -27,17 +27,20 @@ class Project():
         self.log.title("Building Path to Product: ".format(projType))
 
         extpath = ''
-        for idx, seg in enumerate(patharr):
-            if 'collection' in seg:
-                col = self.getcollection(seg['collection'])
-                self.log.info("{0}/collection:{1} => {2}".format(idx*'  ', seg['collection'], col))
-                extpath += '/' + col
-            elif 'group' in seg:
-                self.log.info("{0}/group:{1}".format(idx * '  ', seg['group']))
-                extpath += '/' + seg['group']
-            elif 'product' in seg:
-                self.log.info("{0}/product:{1}".format(idx * '  ', seg['product']))
-                extpath += '/' + seg['product']
+        for idx, level in enumerate(patharr):
+            if level['type'] == 'collection':
+                col = self.getcollection(level['name'])
+                self.log.info("{0}/collection:{1} => {2}".format(idx*'  ', level['name'], col))
+                name = col
+                if program.testAllowedCollection(level['id'], col):
+                    name = program.getAllowedLookup(level['id'], col)
+                extpath += '/' + name
+            elif level['type'] == 'group':
+                self.log.info("{0}/group:{1}".format(idx * '  ', level['name']))
+                extpath += '/' + level['folder']
+            elif level['type'] == 'product':
+                self.log.info("{0}/product:{1}".format(idx * '  ', level['name']))
+                extpath += '/' + level['folder']
 
         # Trim the first slash for consistency elsewhere
         if len(extpath) > 0 and extpath[0] == '/':

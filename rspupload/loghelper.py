@@ -28,7 +28,7 @@ class _LoggerSingleton:
 
             logging.basicConfig(level=loglevel,
                                 filemode='w',
-                                format='%(asctime)s %(levelname)-8s [%(curmethod)-15s] %(message)s',
+                                format='%(asctime)s %(levelname)-8s %(message)s',
                                 datefmt='%Y-%m-%d %H:%M:%S',
                                 filename=logfile)
 
@@ -50,11 +50,11 @@ class _LoggerSingleton:
 
             if exception is not None:
                 txtmsg = '{0}  Exception: {1}'.format(message, str(exception))
-                header = '[{0:8s}]  '.format(method)
+                header = '[{0:8s}]  '.format(method) if self.verbose else ""
                 msg = '{0}{1} : {2}'.format(header, message.replace("\n", "\n" + header), str(exception))
             else:
                 txtmsg = message
-                header = '[{0:8s}] '.format(method)
+                header = '[{0:8s}] '.format(method) if self.verbose else ""
                 msg = '{0}{1}'.format(header, message.replace("\n", "\n" + header))
 
             # Print to stdout
@@ -66,15 +66,15 @@ class _LoggerSingleton:
 
             # Write to log file
             if severity == 'info':
-                self.logger.info(txtmsg, extra={'curmethod': method})
+                self.logger.info(txtmsg)
             elif severity == 'warning':
-                self.logger.warning(txtmsg, extra={'curmethod': method})
+                self.logger.warning(txtmsg)
             elif severity == 'error':
-                self.logger.error(txtmsg, extra={'curmethod': method})
+                self.logger.error(txtmsg)
             elif severity == 'critical':
-                self.logger.critical(txtmsg, extra={'curmethod': method})
+                self.logger.critical(txtmsg)
             if severity == 'debug':
-                self.logger.debug(txtmsg, extra={'curmethod': method})
+                self.logger.debug(txtmsg)
 
 
     def __init__(self, **kwargs):
