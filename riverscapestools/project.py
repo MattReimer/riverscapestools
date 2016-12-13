@@ -1,11 +1,16 @@
 from loghelper import Logger
+import xml.etree.ElementTree as ET
 
 class Project():
 
-    def __init__(self, programET, projectRoot):
+    def __init__(self, progpath, projectRoot):
         self.log = Logger('Project')
-        self.DOM = programET
+        self.DOM = None
+        self.getProgramFromXML(progpath)
         self.LocalRoot = projectRoot
+
+    def getProgramFromXML(self, progpath):
+        self.DOM = ET.parse(progpath).getroot()
 
     def getPath(self, program):
         """

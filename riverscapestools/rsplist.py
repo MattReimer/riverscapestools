@@ -6,34 +6,19 @@ from program import Program
 def rsplist(args):
     """
     :param inputRas:
-    :param maskRas:
+    :param maskRas
     :return:
     """
     log = Logger('Program')
-    projectET = None
-    if re.match('^https*:\/\/.*', args.program) is not None:
-        try:
-            request = urllib2.Request(args.program)
-            request.add_header('Pragma', 'no-cache')
-            file = urllib2.build_opener().open(request)
-            data = file.read()
-            file.close()
-            programET = ET.fromstring(data)
-        except:
-            err = "ERROR: Could not download <{0}>".format(args.program)
-            log.error(err)
-            raise ValueError(err)
-    else:
-        programET = ET.parse(args.program).getroot()
 
-    programObj = Program(programET)
+    program = Program(args.program)
 
     log.title('STARTING Project Lister', "=")
 
-    remotePath = programObj.getProdPath(args.projectname)
+    remotePath = program.getProdPath(args.projectname)
 
     log.title('Walking through and finding projects:')
-    s3ProductWalker(programObj.Bucket, remotePath)
+    s3ProductWalker(program.Bucket, remotePath)
 
     log.title("Done")
 

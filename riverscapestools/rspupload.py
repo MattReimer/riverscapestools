@@ -1,12 +1,9 @@
-import urllib2
 import argparse
 import sys
-import re
 import time
-import xml.etree.ElementTree as ET
 from os import path
 from userinput import query_yes_no
-from botohelper import s3FolderUpload, treeprint
+from botohelper import s3BuildOps, S3Operation
 from loghelper import Logger
 from program import Program
 from project import Project
@@ -18,41 +15,37 @@ def rspupload(args):
     :return:
     """
     log = Logger('Program')
-    projectET = None
-    if re.match('^https*:\/\/.*', args.program) is not None:
-        try:
-            request = urllib2.Request(args.program)
-            request.add_header('Pragma', 'no-cache')
-            file = urllib2.build_opener().open(request)
-            data = file.read()
-            file.close()
-            programET = ET.fromstring(data)
-        except:
-            err = "ERROR: Could not download <{0}>".format(args.program)
-            log.error(err)
-            raise ValueError(err)
-    else:
-        programET = ET.parse(args.program).getroot()
+    direction = S3Operation.Direction.UP
 
-    programObj = Program(programET)
+    program = Program(args.program)
+    projectroot = path.dirname(path.abspath(args.project.name))
 
-    projectRoot = path.dirname(path.abspath(args.project.name))
-    projectET = ET.parse(args.project).getroot()
-    projectObj = Project(projectET, projectRoot)
+    projectObj = Project(args.project, projectroot)
 
     log.title('STARTING PYTHON UPLOADER', "=")
 
-    remotePath = projectObj.getPath(programObj)
+    keyprefix = projectObj.getPath(program)
 
-    log.title('The following files will be uploaded:')
-    treeprint(projectRoot)
+    log.title('The following operations are queued:')
+    log.info('From: {0}'.format(projectroot))
+    log.info('To  : s3://{0}/{1}\n'.format(program.Bucket, keyprefix))
 
-    log.info("\nThese files will be uploaded to: s3://{0}/{1}\n".format(programObj.Bucket, remotePath))
-    time.sleep(0.25)
+    conf = {
+        "force": args.force,
+        "direction": direction,
+        "localroot": projectroot,
+        "keyprefix": keyprefix,
+        "bucket": program.Bucket
+    }
+
+    s3ops = s3BuildOps(conf)
+
     result = query_yes_no("ARE YOU SURE?")
+    # result = True
 
     if result:
-        s3FolderUpload(programObj.Bucket, projectObj.LocalRoot, remotePath)
+        for key in s3ops:
+            s3ops[key].execute()
     else:
         log.info("\n<EXITING> No sync performed\n")
 
@@ -70,10 +63,14 @@ def main():
     parser.add_argument('--logfile',
                         default='',
                         help='Write the results of the operation to a specified logfile (optional)')
+    parser.add_argument('--force',
+                        help = 'Force overwriting of online files.',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--verbose',
                         help = 'Get more information in your logs.',
                         action='store_true',
-                        default=False )
+                        default=False)
     args = parser.parse_args()
 
     log = Logger("Program")

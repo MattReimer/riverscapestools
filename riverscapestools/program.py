@@ -1,16 +1,20 @@
 from loghelper import Logger
 import re
+import urllib2
+import xml.etree.ElementTree as ET
 
 class Program():
 
-    def __init__(self, programET):
-        self.DOM = programET
+    def __init__(self, programpath):
+        self.DOM = None
+        self.getProgram(programpath)
         self.Collections = {}
         self.Groups = {}
         self.Products = {}
         self.Hierarchy = {}
         self.Bucket = None
         self.log = Logger('Program')
+
         # Populate everything
         self.getBucket()
         self.parseCollections()
@@ -19,6 +23,10 @@ class Program():
         self.parseTree(self.DOM.find('Hierarchy/*'))
 
     def parseCollections(self):
+        """
+        Pull all the collections out of the program XML
+        :return:
+        """
         for col in self.DOM.findall('Definitions/Collections/Collection'):
             self.Collections[col.attrib['id']] = {
                 'id': col.attrib['id'],
@@ -26,6 +34,27 @@ class Program():
                 'name': col.attrib['name'],
                 'allows': self.parseCollectionAllowed(col.findall('Allow'))
             }
+
+    def getProgram(self, progpath):
+        """
+        Either uses a local path or downloads an online version of the program XML
+        :param path:
+        :return:
+        """
+        if re.match('^https*:\/\/.*', progpath) is not None:
+            try:
+                request = urllib2.Request(progpath)
+                request.add_header('Pragma', 'no-cache')
+                file = urllib2.build_opener().open(request)
+                data = file.read()
+                file.close()
+                self.DOM = ET.fromstring(data)
+            except:
+                err = "ERROR: Could not download <{0}>".format(progpath)
+                self.log.error(err)
+                raise ValueError(err)
+        else:
+            self.DOM = ET.parse(progpath).getroot()
 
     def parseCollectionAllowed(self, allowETs):
         allows = []
