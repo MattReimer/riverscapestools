@@ -1,7 +1,8 @@
-from loghelper import Logger
 import re
 import urllib2
 import xml.etree.ElementTree as ET
+from botohelper import s3GetFolderList
+from userinput import *
 
 class Program():
 
@@ -34,6 +35,11 @@ class Program():
                 'name': col.attrib['name'],
                 'allows': self.parseCollectionAllowed(col.findall('Allow'))
             }
+            allowType = 'fixed'
+            allows = self.Collections[col.attrib['id']]['allows']
+            if len(allows) > 0:
+                allowType = allows[0]['type']
+            self.Collections[col.attrib['id']]['allowtype'] = allowType
 
     def getProgram(self, progpath):
         """
@@ -191,14 +197,13 @@ class Program():
     def findprojpath(self, prodname, node=None, path=[]):
         """
         Find the path to the desired project
-        :param projname:
-        :param etNode:
+        :param prodname:
+        :param node:
         :param path:
         :return:
         """
         if node is None:
             node = self.Hierarchy
-
         if node['type'] == 'product' and node['node']['name'] == prodname:
             path.append(node['node'])
             return path
@@ -212,6 +217,82 @@ class Program():
                 if result is not None:
                     return result
 
+    def progtos3path(self, progpath, level=0, currpath=[], paths=[]):
+        """
+        A program path to a series of real S3 paths
+        :param progpath:
+        :param level:
+        :param currpath:
+        :param paths:
+        :return:
+        """
+        # Are we at the end yet? last level must be a product
+        if (level - 1) == len(progpath):
+            currpath.append(progpath[level])
+            paths.append('/'.join(currpath))
+            return paths
+
+        # One choice. Just move on:
+        if len(progpath[level]) == 1:
+            currpath.append(progpath[level])
+            self.progtos3path(progpath, level+1, paths)
+        else:
+            for el in progpath[level]:
+                newpath = currpath[:].append(el)
+                self.progtos3path(progpath, level+1, paths)
+
+
+    def menuWalk(self, nodes=None, currpath=[]):
+        """
+        Walks through the program letting users choose if it's a level
+        or specify if it's a container It returns a set of program paths
+        that we then need to go and lookup to make our download queue
+        :param currlevelObj:
+        :param path:
+        :return:
+        """
+
+        if nodes is None:
+            nodes = [self.Hierarchy]
+
+        name = nodes[0]['node']['name'] if len(nodes) == 1 else ""
+
+        # Get the list at the current path
+        pathstr = '/'.join(currpath) + '/' if len(currpath) > 0 else ""
+        levellist = s3GetFolderList(self.Bucket, pathstr)
+        querystr = "Collection Choice: {0}{1}".format(pathstr, name)
+        choicename = querychoices(querystr, levellist, "Select:")
+        currpath.append(choicename)
+
+        if len(nodes) > 1:
+            node = getnodekeyval(nodes, 'folder', choicename)
+        else:
+            node = nodes[0]
+
+        if node['type'] == 'product':
+            pathstr = '/'.join(currpath) + '/' if len(currpath) > 0 else ""
+            query = "Product Found: {0}\nDownload?".format(pathstr)
+            result = query_yes_no(query)
+            if result:
+                return currpath
+            else:
+                return None
+        # No we've made out choice. We need to move on.
+        elif 'children' in node and len(node['children']) > 0:
+            child1 = node['children'][0]
+            if child1['type'] == 'collection':
+                return self.menuWalk([child1], currpath[:])
+            elif child1['type'] == 'group':
+                return self.menuWalk(node['children'], currpath[:])
+            elif child1['type'] == 'product':
+                return self.menuWalk(node['children'], currpath[:])
+
 
 def _strnullorempty(str):
     return str is None or len(str.strip()) == 0
+
+def getnodekeyval(thelist, key, val):
+    return next(x for x in thelist if x['node'][key] == val)
+
+def getkeyval(thelist, key, val):
+    return next(x for x in thelist if x[key] == val)

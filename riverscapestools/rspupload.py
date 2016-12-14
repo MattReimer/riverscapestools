@@ -1,9 +1,8 @@
 import argparse
 import sys
-import time
 from os import path
 from userinput import query_yes_no
-from botohelper import s3BuildOps, S3Operation
+from botohelper import s3BuildOps
 from loghelper import Logger
 from program import Program
 from project import Project

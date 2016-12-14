@@ -1,14 +1,13 @@
-import sys
-import threading
 import os
 import boto3
-from boto3.s3.transfer import TransferConfig, S3Transfer
+from boto3.s3.transfer import TransferConfig
 import botocore
-import math
-import binascii
+from botoprogress import UploadProgress, DownloadProgress
 from loghelper import Logger
+import binascii
+
 import hashlib
-from progressbar import ProgressBar
+
 
 # Max size in bytes before uploading in parts.
 # Specifying this is important as it affects
@@ -40,7 +39,10 @@ def s3BuildOps(conf):
     response = s3.list_objects(Bucket=conf['bucket'], Prefix=prefix)
 
     # Get all the files we have locally
-    files = localProductWalker(conf['localroot'])
+    if os.path.isdir(conf['localroot']):
+        files = localProductWalker(conf['localroot'])
+    else:
+        files = {}
 
     # Fill in any files we find on the remote
     if 'Contents' in response:
@@ -81,7 +83,15 @@ def s3issame(filepath, dst):
     return same
 
 
-def localProductWalker(projroot, currentdir="", filearr={}):
+def progpathWalker(progpoatg):
+    """
+    Walk along a progpath and build out real paths to build
+    :param progpoatg:
+    :return:
+    """
+
+
+def localProductWalker(projroot, currentdir="", filedir={}):
     """
     This method has a similar recursive structure to s3FolderUpload
     but we're keeping it separate since it is only used to visualize
@@ -97,11 +107,11 @@ def localProductWalker(projroot, currentdir="", filearr={}):
         abspath = os.path.join(projroot, relpath)
         if os.path.isfile(abspath):
             log.debug(spaces + relpath)
-            filearr[relpath] = { 'src': abspath }
+            filedir[relpath] = { 'src': abspath }
         elif os.path.isdir(abspath):
             log.debug(spaces + pathseg + '/')
-            localProductWalker(projroot, relpath, filearr)
-    return filearr
+            localProductWalker(projroot, relpath, filedir)
+    return filedir
 
 
 def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
@@ -149,17 +159,81 @@ def s3FileUpload(bucket, key, filepath):
     Just upload one file using Boto3
     :param bucket:
     :param key:
-    :param filepath:Y
+    :param filepath:
     :return:
     """
     log = Logger('S3FileUpload')
 
     log.info("Uploading: {0} ==> s3://{1}/{2}".format(filepath, bucket, key))
     # This step prints straight to stdout and does not log
-    s3.upload_file(filepath, bucket, key, Config=S3Config, Callback=ProgressPercentage(filepath))
+    s3.upload_file(filepath, bucket, key, Config=S3Config, Callback=UploadProgress(filepath))
     print ""
     log.info("Upload Completed: {0}".format(filepath))
 
+
+def s3FileDownload(bucket, key, filepath):
+    """
+    Just upload one file using Boto3
+    :param bucket:
+    :param key:
+    :param filepath:
+    :return:
+    """
+    log = Logger('S3FileDownload')
+
+    log.info("Downloading: {0} ==> ".format(key))
+    # This step prints straight to stdout and does not log
+    s3.download_file(bucket, key, filepath, Config=S3Config, Callback=DownloadProgress(filepath))
+    print ""
+    log.info("Download Completed: {0}".format(filepath))
+
+def s3GetFolderList(bucket, prefix):
+    """
+    Given a path array, ending in a Product, snake through the
+    S3 bucket recursively and list all the products available
+    :param patharr:
+    :param path:
+    :param currlevel:
+    :return:
+    """
+    log = Logger('CollectionList')
+    results = []
+    # list everything at this collection
+    response = s3.list_objects(Bucket=bucket, Prefix=prefix, Delimiter='/')
+    if 'CommonPrefixes' in response:
+        for o in response.get('CommonPrefixes'):
+            results.append(o['Prefix'].replace(prefix, '').replace('/', ''))
+    return results
+
+#
+# Function : md5sum
+# Purpose : Get the md5 hash of a file stored in S3
+# Returns : Returns the md5 hash that will match the ETag in S3
+def md5sum(sourcePath):
+
+    filesize = os.path.getsize(sourcePath)
+    hash = hashlib.md5()
+
+    if filesize > AWS_UPLOAD_MAX_SIZE:
+
+        block_count = 0
+        md5string = ""
+        with open(sourcePath, "r+b") as f:
+            for block in iter(lambda: f.read(AWS_UPLOAD_PART_SIZE), ""):
+                hash = hashlib.md5()
+                hash.update(block)
+                md5string = md5string + binascii.unhexlify(hash.hexdigest())
+                block_count += 1
+
+        hash = hashlib.md5()
+        hash.update(md5string)
+        return hash.hexdigest() + "-" + str(block_count)
+
+    else:
+        with open(sourcePath, "r+b") as f:
+            for block in iter(lambda: f.read(AWS_UPLOAD_PART_SIZE), ""):
+                hash.update(block)
+        return hash.hexdigest()
 
 class S3Operation:
     """
@@ -246,12 +320,22 @@ class S3Operation:
 
         if self.op == self.FileOps.IGNORE:
             self.log.info(" [{0}] {1}: Nothing to do. Continuing.".format(self.op, self.key))
+
         elif self.op == self.FileOps.UPLOAD:
             s3FileUpload(self.bucket, remotekey, localpath)
+
         elif self.op == self.FileOps.DOWNLOAD:
-            self.log.info("   Downloading file.")
+            dir = os.path.dirname(localpath)
+            if not os.path.exists(dir):
+                try:
+                    os.makedirs(dir)
+                except Exception as e:
+                    raise Exception("ERROR: Directory `{0}` could not be created.".format(dir))
+            s3FileDownload(self.bucket, remotekey, localpath)
+
         elif self.op == self.FileOps.DELETE_LOCAL:
             self.log.info("   Deleting local file.")
+
         elif self.op == self.FileOps.DELETE_REMOTE:
             self.log.info("   Deleting remote file.")
 
@@ -261,82 +345,5 @@ class S3Operation:
         return "[{0:16s}] ./{1} ".format(opstr.strip(), self.key)
 
 
-#
-# Function : md5sum
-# Purpose : Get the md5 hash of a file stored in S3
-# Returns : Returns the md5 hash that will match the ETag in S3
-def md5sum(sourcePath):
-
-    filesize = os.path.getsize(sourcePath)
-    hash = hashlib.md5()
-
-    if filesize > AWS_UPLOAD_MAX_SIZE:
-
-        block_count = 0
-        md5string = ""
-        with open(sourcePath, "r+b") as f:
-            for block in iter(lambda: f.read(AWS_UPLOAD_PART_SIZE), ""):
-                hash = hashlib.md5()
-                hash.update(block)
-                md5string = md5string + binascii.unhexlify(hash.hexdigest())
-                block_count += 1
-
-        hash = hashlib.md5()
-        hash.update(md5string)
-        return hash.hexdigest() + "-" + str(block_count)
-
-    else:
-        with open(sourcePath, "r+b") as f:
-            for block in iter(lambda: f.read(AWS_UPLOAD_PART_SIZE), ""):
-                hash.update(block)
-        return hash.hexdigest()
 
 
-# Shortcut to MD5
-# def get_md5(filename):
-#   f = open(filename, 'rb')
-#   m = hashlib.md5()
-#   while True:
-#     data = f.read(10240)
-#     if len(data) == 0:
-#         break
-#     m.update(data)
-#   return m.hexdigest()
-
-
-class ProgressPercentage(object):
-    """
-    A Little helper class to display the up/download percentage
-    """
-    def __init__(self, filename):
-        self._filename = filename
-        self._basename = os.path.basename(self._filename)
-        self._filesize = getSize(self._filename)
-        self._seen_so_far = 0
-        self._lock = threading.Lock()
-        custom_options = {
-            'start': 0,
-            'end': 100,
-            'width': 40,
-            'blank': '_',
-            'fill': '#',
-            'format': '%(progress)s%% [%(fill)s%(blank)s]'
-        }
-        self.p = ProgressBar(**custom_options)
-
-    def __call__(self, bytes_amount):
-        # To simplify we'll assume this is hooked up
-        # to a single filename.
-        with self._lock:
-            self._seen_so_far += bytes_amount
-            self.percentdone = math.floor(float(self._seen_so_far) / float(self._filesize) * 100)
-            # p.set(self.percentdone)
-            self.p.progress = self.percentdone
-            sys.stdout.write(
-                "\r       {0} --> {3} {1} bytes of {2} transferred".format(
-                    self._basename, format(self._seen_so_far, ",d"), format(self._filesize, ",d"), str(self.p)) )
-            sys.stdout.flush()
-
-def getSize(filename):
-    st = os.stat(filename)
-    return st.st_size

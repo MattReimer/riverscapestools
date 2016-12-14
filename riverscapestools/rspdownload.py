@@ -1,29 +1,76 @@
-import urllib2
 import argparse
-import sys
-import re
-import time
-import boto3
-import xml.etree.ElementTree as ET
-from os import path
-from userinput import query_yes_no
-from botohelper import s3FolderUpload, treeprint
-from loghelper import Logger
+from userinput import *
+from botohelper import s3BuildOps, S3Operation
 from program import Program
-from project import Project
 
+DATA_ENV_VAR = "RSDATADIR"
 
 def rspdownload(args):
-    print "hu"
+    datadir = getDataDir(args)
+    log = Logger('Program')
+    direction = S3Operation.Direction.DOWN
+    program = Program(args.program)
 
+    log.title('STARTING PYTHON DOWNLOADER', "=")
+
+    downloadPath = program.menuWalk()
+
+    assert downloadPath, "No Product chosen. Exiting"
+
+    log.info('Found download path: {0}'.format('/'.join(downloadPath)))
+    keyprefix = '/'.join(downloadPath)
+    conf = {
+        "force": args.force,
+        "direction": direction,
+        "localroot": os.path.join(datadir, keyprefix),
+        "keyprefix": keyprefix,
+        "bucket": program.Bucket
+    }
+
+    log.title('The following operations are queued:')
+    log.info('From: s3://{0}/{1}'.format(program.Bucket, conf['keyprefix']))
+    log.info('To  : {0}\n'.format(conf['localroot']))
+
+    s3ops = s3BuildOps(conf)
+
+    result = query_yes_no("ARE YOU SURE?")
+    # result = True
+
+    if result:
+        for key in s3ops:
+            s3ops[key].execute()
+    else:
+        log.info("\n<EXITING> No sync performed\n")
+
+
+
+def getDataDir(args):
+    log = Logger("EnvCheck")
+    envroot = None
+    if args.datadir:
+        log.info("datadir argument found: {0}".format(args.datadir))
+        envroot = args.datadir
+    else:
+        envroot = os.getenv(DATA_ENV_VAR)
+
+    # Env set and path exists. All is good.
+    if envroot and os.path.isdir(envroot):
+        log.info("Datadir `{0}` exists.".format(envroot))
+    elif envroot and not os.path.isdir(envroot):
+        log.warning("WARNING: Folder does not exist: {0}".format(envroot))
+        if query_yes_no("Create this directory?"):
+            try:
+                os.makedirs(envroot)
+            except Exception as e:
+                raise Exception("ERROR: Directory `{0}` could not be created.".format(envroot))
+    else:
+        raise Exception("ERROR: You must either specify --datadir or set environment variable `{0}` to the root data directory.".format(DATA_ENV_VAR))
+    return envroot
 
 def main():
     # parse command line options
     parser = argparse.ArgumentParser()
-    parser.add_argument('somevar',
-                        help='Path to the project XML file.',
-                        type=argparse.FileType('r'))
-    parser.add_argument('--localroot',
+    parser.add_argument('--datadir',
                         help='Local path to the root of the program on your local drive')
     parser.add_argument('--program',
                         default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
@@ -31,10 +78,14 @@ def main():
     parser.add_argument('--logfile',
                         default='',
                         help='Write the results of the operation to a specified logfile (optional)')
+    parser.add_argument('--force',
+                        help = 'Force overwriting of online files.',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--verbose',
                         help = 'Get more information in your logs.',
                         action='store_true',
-                        default=False )
+                        default=False)
     args = parser.parse_args()
 
     log = Logger("Program")
@@ -43,7 +94,7 @@ def main():
                   verbose=args.verbose)
 
     try:
-        rspupload(args)
+        rspdownload(args)
     except AssertionError as e:
         log.error("Assertion Error", e)
         sys.exit(0)
