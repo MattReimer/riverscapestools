@@ -29,7 +29,7 @@ setup(
       author='Matt Reimer',
       author_email='matt@northarrowresearch.com',
       license='MIT',
-      packages=['riverscapestools'],
+      packages=['.', 'riverscapestools.s3', 'riverscapestools.program', 'riverscapestools.logger'],
       zip_safe=False,
       install_requires=install_requires,
       entry_points={
