@@ -1,48 +1,90 @@
 import unittest
 import __builtin__
+from logger import Logger
 
 class TestuserInput(unittest.TestCase):
+    PROGRAMXML = './test/testprogram.xml'
 
-    def test_download(self):
+    def test_downloadFHM(self):
         from rspdownload import rspdownload
-        inputs = InputFaker(['1', 'Y', 'Y'])
+        downloadinputs = InputFaker([
+            '2', # (1) Network (2) Site)
+            '1', # (1) FHM (2) GCD
+            'Y',
+            'Y'])
 
-        class args:
-            datadir='./test/dataDir'
-            program='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml'
-            logfile=''
-            force=False
-            verbose=False
-
-        rspdownload(args)
+        scaffold = init(datadir='../test/logs/download_fhm.log/test/dataDir', logfile='./test/logs/download_fhm.log')
+        rspdownload(scaffold.args)
         self.assertTrue(True)
 
-    def test_upload(self):
+    def test_downloadGCD(self):
+        from rspdownload import rspdownload
+        downloadinputs = InputFaker([
+            '2', # (1) Network (2) Site)
+            '2', # (1) FHM (2) GCD
+            'Y',
+            'Y'])
+
+        scaffold = init(datadir='../test/logs/download_fhm.log/test/dataDir', logfile='./test/logs/download_gcd.log')
+        rspdownload(scaffold.args)
+        self.assertTrue(True)
+
+    def test_downloadVBET(self):
+        from rspdownload import rspdownload
+        downloadinputs = InputFaker([
+            '1', #  Network/Site)
+            'Y',
+            'Y'])
+
+        scaffold = init(datadir='../test/logs/download_fhm.log/test/dataDir', logfile='./test/logs/download_vbet.log')
+        rspdownload(scaffold.args)
+        self.assertTrue(True)
+
+    def test_uploadFHM(self):
         from rspupload import rspupload
         inputs = InputFaker(['Y'])
+        scaffold = init(project=FileTypeFaker('./test/sampleFHM/fhm_project.xml'), logfile='./test/logs/upload_fhm.log')
+        rspupload(scaffold.args)
 
-        class args:
-            project=FileTypeFaker('./test/SampleProject/fhm_project.xml')
-            program='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml'
-            logfile=''
-            force=True
-            verbose=False
+    def test_uploadGCD(self):
+        from rspupload import rspupload
+        inputs = InputFaker(['Y'])
+        scaffold = init(project=FileTypeFaker('./test/sampleGCD/gcd_project.xml'), logfile='./test/logs/upload_gcd.log')
+        rspupload(scaffold.args)
 
-        rspupload(args)
-        self.assertTrue(True)
+    def test_uploadVBET(self):
+        from rspupload import rspupload
+        inputs = InputFaker(['Y'])
+        scaffold = init(project=FileTypeFaker('./test/sampleVBET/vbet_project.xml'), logfile='./test/logs/upload_vbet.log')
+        rspupload(scaffold.args)
 
     def test_list(self):
         from rsplist import rsplist
         inputs = InputFaker(['Y'])
-        class args:
-            projectname='FHM'
-            program='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml'
-            logfile=''
-            force=True
-            verbose=False
-
-        rsplist(args)
+        scaffold = init(project='FHM', logfile='./test/logs/list VBET.log')
+        rsplist(scaffold.args)
         self.assertTrue(True)
+
+class init:
+
+    class Arguments:
+        PROGRAMXML = './test/testprogram.xml'
+        __allowed = ("verbose", "force", "program", "project", "datadir", "logfile")
+
+        def __init__(self, **kwargs):
+            self.program = self.PROGRAMXML
+            self.verbose = False
+            self.delete = False
+            self.force = False
+
+            for k, v in kwargs.iteritems():
+                assert( k in self.__class__.__allowed ), "NOT PERMITTED: {0}".format(k)
+                setattr(self, k, v)
+
+    def __init__(self, **kwargs):
+        self.args = self.Arguments(**kwargs)
+        self.log = Logger("Testing")
+        self.log.setup(self.args)
 
 class FileTypeFaker:
     def __init__(self, filename):

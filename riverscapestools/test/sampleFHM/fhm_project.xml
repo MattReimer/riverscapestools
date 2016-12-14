@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Riverscapes/analyst-toolbar-qgis-plugin/master/Resources/ProjectSamples/XSD/V1/Project.xsd">
+  xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd">
 
   <Name>My FHM PRoject NAME</Name>
   <ProjectType>FHM</ProjectType>
@@ -11,7 +11,7 @@
     <Meta name="Site">ASC123123-SOMESITE</Meta>
     <Meta name="Flow">F00001SDDA</Meta>
     <Meta name="Watershed">Asotin</Meta>
-    <Meta name="Region">CRB</Meta>
+    <Meta name="Region">TESTCRB</Meta>
   </MetaData>
 
 </Project>

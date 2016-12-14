@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Riverscapes/Program/master/Project/XSD/V1/Project.xsd">
+
+  <Name>My FHM PRoject NAME</Name>
+  <ProjectType>VBET</ProjectType>
+
+  <MetaData>
+    <Meta name="Watershed">Asotin</Meta>
+    <Meta name="Region">TESTCRB</Meta>
+  </MetaData>
+
+</Project>

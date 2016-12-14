@@ -18,10 +18,9 @@ def s3BuildOps(conf):
     response = s3.list(prefix)
 
     # Get all the files we have locally
+    files = {}
     if os.path.isdir(conf['localroot']):
         files = localProductWalker(conf['localroot'])
-    else:
-        files = {}
 
     # Fill in any files we find on the remote
     if 'Contents' in response:
@@ -38,7 +37,7 @@ def s3BuildOps(conf):
 
     return opstore
 
-def localProductWalker(projroot, currentdir="", filedir={}):
+def localProductWalker(projroot, currentdir="", filedir=None):
     """
     This method has a similar recursive structure to s3FolderUpload
     but we're keeping it separate since it is only used to visualize
@@ -47,6 +46,9 @@ def localProductWalker(projroot, currentdir="", filedir={}):
     :param first:
     :return:
     """
+    if not filedir:
+        filedir = {}
+
     log = Logger('localProdWalk')
     for pathseg in os.listdir(os.path.join(projroot, currentdir)):
         spaces = len(currentdir) * ' ' + '/'

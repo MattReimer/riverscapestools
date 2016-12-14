@@ -1,12 +1,11 @@
 import argparse
+from settings import defaults, getDataDir
 from os import path, getenv, makedirs
 from userinput import *
 from s3.operations import S3Operation
 from s3.walkers import s3BuildOps
 from program import Program
 from logger import Logger
-
-DATA_ENV_VAR = "RSDATADIR"
 
 def rspdownload(args):
     datadir = getDataDir(args)
@@ -23,6 +22,7 @@ def rspdownload(args):
     log.info('Found download path: {0}'.format('/'.join(downloadPath)))
     keyprefix = '/'.join(downloadPath)
     conf = {
+        "delete": args.delete,
         "force": args.force,
         "direction": direction,
         "localroot": path.join(datadir, keyprefix),
@@ -46,49 +46,23 @@ def rspdownload(args):
         log.info("\n<EXITING> No sync performed\n")
 
 
-
-def getDataDir(args):
-    """
-    This will either grab the data dir from an environment variable
-    or it will use one that you specify
-    :param args:
-    :return:
-    """
-    log = Logger("EnvCheck")
-    envroot = None
-    if args.datadir:
-        log.info("datadir argument found: {0}".format(args.datadir))
-        envroot = args.datadir
-    else:
-        envroot = getenv(DATA_ENV_VAR)
-
-    # Env set and path exists. All is good.
-    if envroot and path.isdir(envroot):
-        log.info("Datadir `{0}` exists.".format(envroot))
-    elif envroot and not path.isdir(envroot):
-        log.warning("WARNING: Folder does not exist: {0}".format(envroot))
-        if query_yes_no("Create this directory?"):
-            try:
-                makedirs(envroot)
-            except Exception as e:
-                raise Exception("ERROR: Directory `{0}` could not be created.".format(envroot))
-    else:
-        raise Exception("ERROR: You must either specify --datadir or set environment variable `{0}` to the root data directory.".format(DATA_ENV_VAR))
-    return envroot
-
 def main():
     # parse command line options
     parser = argparse.ArgumentParser()
     parser.add_argument('--datadir',
                         help='Local path to the root of the program on your local drive')
     parser.add_argument('--program',
-                        default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
+                        default=defaults.ProgramXML,
                         help='Path or url to the Program XML file (optional)')
     parser.add_argument('--logfile',
                         default='',
                         help='Write the results of the operation to a specified logfile (optional)')
+    parser.add_argument('--delete',
+                        help = 'Local files that are not on S3 will be deleted (Default: False).',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--force',
-                        help = 'Force overwriting of online files.',
+                        help = 'Force a download, even if files are the same (disabled by default)',
                         action='store_true',
                         default=False)
     parser.add_argument('--verbose',
@@ -98,9 +72,7 @@ def main():
     args = parser.parse_args()
 
     log = Logger("Program")
-    if len(args.logfile) > 0:
-        log.setup(logfile=args.logfile,
-                  verbose=args.verbose)
+    log.setup(args)
 
     try:
         rspdownload(args)

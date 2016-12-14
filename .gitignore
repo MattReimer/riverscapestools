@@ -19,3 +19,4 @@ gs
 *.egg-info
 
 riverscapestools/test/datadir
+riverscapestools/test/logs

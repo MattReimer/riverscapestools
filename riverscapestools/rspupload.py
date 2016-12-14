@@ -6,6 +6,8 @@ from s3.operations import S3Operation
 from s3.walkers import s3BuildOps
 from logger import Logger
 from program import *
+from settings import defaults
+
 
 def rspupload(args):
     """
@@ -30,7 +32,8 @@ def rspupload(args):
     log.info('To  : s3://{0}/{1}\n'.format(program.Bucket, keyprefix))
 
     conf = {
-        "force": args.force,
+        "delete": args.delete or False,
+        "force": args.force or False,
         "direction": direction,
         "localroot": projectroot,
         "keyprefix": keyprefix,
@@ -57,25 +60,26 @@ def main():
                         help='Path to the project XML file.',
                         type=argparse.FileType('r'))
     parser.add_argument('--program',
-                        default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
+                        default=defaults.ProgramXML,
                         help='Path or url to the Program XML file (optional)')
     parser.add_argument('--logfile',
-                        default='',
                         help='Write the results of the operation to a specified logfile (optional)')
+    parser.add_argument('--delete',
+                        help = 'Remote files that are not on local will be deleted (disabled by default)',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--force',
-                        help = 'Force overwriting of online files.',
+                        help = 'Force a download, even if files are the same (disabled by default)',
                         action='store_true',
                         default=False)
     parser.add_argument('--verbose',
-                        help = 'Get more information in your logs.',
+                        help = 'Get more information in your logs (optional)',
                         action='store_true',
                         default=False)
     args = parser.parse_args()
 
     log = Logger("Program")
-    if len(args.logfile) > 0:
-        log.setup(logfile=args.logfile,
-                  verbose=args.verbose)
+    log.setup(args)
 
     try:
         rspupload(args)

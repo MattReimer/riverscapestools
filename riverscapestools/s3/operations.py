@@ -8,6 +8,7 @@ class S3Operation:
     A Simple class for storing src/dst file information and the operation we need to perform
     """
     class FileOps:
+        # Kind of an enumeration
         DELETE_REMOTE = "Delete Remote"
         DELETE_LOCAL = "Delete Local"
         UPLOAD = "Upload"
@@ -15,10 +16,12 @@ class S3Operation:
         IGNORE = "Ignore"
 
     class Direction:
+        # Kind of an enumeration
         UP = "up"
         DOWN = "down"
 
     class FileState:
+        # Kind of an enumeration
         LOCALONLY = "Local-Only"
         REMOTEONLY = "Remote-Only"
         UPDATENEEDED = "Update Needed"
@@ -26,8 +29,9 @@ class S3Operation:
 
     def __init__(self, key, fileobj, conf):
         """
-        :param src: relative src key
-        :param dst: relative dst key
+        :param key: The relative key/path of the file in question
+        :param fileobj: the file object with 'src' and 'dst'
+        :param conf: the configuration dictionary
         """
         self.log = Logger('S3Ops')
         self.s3 = Transfer(conf['bucket'])
@@ -37,6 +41,7 @@ class S3Operation:
         self.filestate = self.FileState.SAME
         self.op = self.FileOps.IGNORE
 
+        self.delete = conf['delete']
         self.force = conf['force']
         self.localroot = conf['localroot']
         self.bucket = conf['bucket']
@@ -59,24 +64,36 @@ class S3Operation:
                 self.filestate = self.FileState.UPDATENEEDED
 
         # The Upload Case
+        # ------------------------------
         if self.direction == self.Direction.UP:
             # Two cases for uploading the file: New file or different file
             if self.filestate == self.FileState.LOCALONLY or self.filestate == self.FileState.UPDATENEEDED:
                 self.op = self.FileOps.UPLOAD
+
+            # If we've requested a force, do the upload anyway
             elif self.FileState.SAME and self.force:
                 self.op = self.FileOps.UPLOAD
+
             # If the remote is there but the local is not and we're uploading then clean up the remote
-            elif self.filestate == self.FileState.REMOTEONLY:
+            # this requires thed delete flag be set
+            elif self.filestate == self.FileState.REMOTEONLY and self.delete:
                 self.op = self.FileOps.DELETE_REMOTE
 
         # The Download Case
+        # ------------------------------
         elif self.direction == self.Direction.DOWN:
             if self.filestate == self.FileState.REMOTEONLY or self.filestate == self.FileState.UPDATENEEDED:
                 self.op = self.FileOps.DOWNLOAD
+
+            # If we've requested a force, do the download anyway
             elif self.FileState.SAME and self.force:
                 self.op = self.FileOps.DOWNLOAD
-            elif self.filestate == self.FileState.LOCALONLY:
+
+            # If the local is there but the remote is not and we're downloading then clean up the local
+            # this requires thed delete flag be set
+            elif self.filestate == self.FileState.LOCALONLY and self.delete:
                 self.op = self.FileOps.DELETE_LOCAL
+
         self.log.info(str(self))
 
     def getS3Key(self):
@@ -88,6 +105,10 @@ class S3Operation:
         return os.path.join(self.localroot, self.key)
 
     def execute(self):
+        """
+        Actually run the command to upload/download/delete the file
+        :return:
+        """
 
         if self.op == self.FileOps.IGNORE:
             self.log.info(" [{0}] {1}: Nothing to do. Continuing.".format(self.op, self.key))
@@ -96,12 +117,6 @@ class S3Operation:
             self.upload()
 
         elif self.op == self.FileOps.DOWNLOAD:
-            dirpath = os.path.dirname(self.abspath)
-            if not os.path.exists(dirpath):
-                try:
-                    os.makedirs(dirpath)
-                except Exception as e:
-                    raise Exception("ERROR: Directory `{0}` could not be created.".format(dirpath))
             self.download()
 
         elif self.op == self.FileOps.DELETE_LOCAL:
@@ -111,27 +126,39 @@ class S3Operation:
             self.delete_remote()
 
     def __repr__(self):
-        forcestr = "(FORCE)" if self.force else ""
-        opstr = "{0:10s} ={2}=> {1:10s}".format(self.filestate, self.op, forcestr)
+        """
+        When we print this class as a string this is what we output
+        """
+        deletestr = "(FORCE)" if self.delete else ""
+        opstr = "{0:10s} ={2}=> {1:10s}".format(self.filestate, self.op, deletestr)
         return "[{0:16s}] ./{1} ".format(opstr.strip(), self.key)
 
 
     def delete_remote(self):
-        log = Logger('S3FileDelete')
-
-        log.info("Deleting: {0} ==> ".format(self.fullkey))
+        """
+        Delete a Remote file
+        """
+        self.log.info("Deleting: {0} ==> ".format(self.fullkey))
         # This step prints straight to stdout and does not log
         self.s3.delete(self.fullkey)
-        log.info("S3 Deletion Completed: {0}".format(self.fullkey))
+        self.log.debug("S3 Deletion Completed: {0}".format(self.fullkey))
 
     def delete_local(self):
-        dir = os.path.dirname(self.abspath)
+        """
+        Delete a local file
+        """
+        dirname = os.path.dirname(self.abspath)
         os.remove(self.abspath)
+        self.log.info("Deleting Local file: {0} ==> ".format(self.abspath))
         # now walk backwards and clean up empty folders
         try:
-            os.removedirs(dir)
+            os.removedirs(dirname)
+            self.log.debug('Cleaning up folders: {0}'.format(dirname))
         except:
+            self.log.debug('Folder cleanup stopped since there were still files: {0}'.format(dirname))
             pass
+        self.log.debug("Local Deletion Completed: {0}".format(self.abspath))
+
 
     def download(self):
         """
@@ -142,6 +169,14 @@ class S3Operation:
         :return:
         """
         log = Logger('S3FileDownload')
+
+        # Make a directory if that's needed
+        dirpath = os.path.dirname(self.abspath)
+        if not os.path.exists(dirpath):
+            try:
+                os.makedirs(dirpath)
+            except Exception as e:
+                raise Exception("ERROR: Directory `{0}` could not be created.".format(dirpath))
 
         log.info("Downloading: {0} ==> ".format(self.fullkey))
         # This step prints straight to stdout and does not log

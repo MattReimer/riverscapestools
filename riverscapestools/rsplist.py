@@ -2,6 +2,7 @@ import argparse
 from userinput import *
 from s3.walkers import s3ProductWalker
 from logger import Logger
+from settings import defaults
 
 from program import Program
 
@@ -17,7 +18,7 @@ def rsplist(args):
 
     log.title('STARTING Project Lister', "=")
 
-    remotePath = program.getProdPath(args.projectname)
+    remotePath = program.getProdPath(args.project)
 
     log.title('Walking through and finding projects:')
     s3ProductWalker(program.Bucket, remotePath)
@@ -28,25 +29,23 @@ def rsplist(args):
 def main():
     # parse command line options
     parser = argparse.ArgumentParser()
-    parser.add_argument('projectname',
+    parser.add_argument('project',
                         help='Name of the program we are looking for.',
                         type=str)
     parser.add_argument('--program',
-                        default='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml',
+                        default=defaults.ProgramXML,
                         help='Path or url to the Program XML file (optional)')
     parser.add_argument('--logfile',
                         default='',
                         help='Write the results of the operation to a specified logfile (optional)')
     parser.add_argument('--verbose',
-                        help = 'Get more information in your logs.',
+                        help = 'Get more information in your logs (optional)',
                         action='store_true',
                         default=False )
     args = parser.parse_args()
 
     log = Logger("Program")
-    if len(args.logfile) > 0:
-        log.setup(logfile=args.logfile,
-                  verbose=args.verbose)
+    log.setup(args)
 
     try:
         rsplist(args)

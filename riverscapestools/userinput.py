@@ -11,6 +11,7 @@ def query_yes_no(question, default="yes"):
 
     The "answer" return value is True for "yes" or False for "no".
     """
+    log = Logger("query_yes_no")
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
@@ -23,28 +24,27 @@ def query_yes_no(question, default="yes"):
         raise ValueError("invalid default answer: '%s'" % default)
 
     while True:
-        sys.stdout.write(question + prompt)
+        log.info(question + prompt)
         choice = raw_input().lower()
         if default is not None and choice == '':
             return valid[default]
         elif choice in valid:
             return valid[choice]
         else:
-            sys.stdout.write("Please respond with 'yes' or 'no' "
-                             "(or 'y' or 'n').\n")
+            log.warning("Please respond with 'yes' or 'no' (or 'y' or 'n').\n")
 
 def querychoices(title, options, question):
     # cls()
     if len(options) == 1:
         return options[0]
 
-    log = Logger("MENU")
+    log = Logger("querychoices")
     log.title(title, "=")
     for idx, cstr in enumerate(options):
-        print "({0}) {1}".format(idx+1, cstr)
+        log.info("({0}) {1}".format(idx+1, cstr) )
 
     while True:
-        sys.stdout.write(question + " [Choose One] ")
+        log.info(question + " [Choose One] ")
         choice = raw_input()
 
         try:
@@ -53,4 +53,4 @@ def querychoices(title, options, question):
                 raise ValueError("Choice is out of range")
             return options[nchoice-1]
         except ValueError as e:
-            sys.stdout.write("Please respond with a single integer value. \n")
+            log.warning("Please respond with a single integer value. \n")
