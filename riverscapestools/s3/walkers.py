@@ -70,8 +70,10 @@ def localProductWalker(projroot, filedict, currentdir=""):
     log = Logger('localProdWalk')
     for pathseg in os.listdir(os.path.join(projroot, currentdir)):
         spaces = len(currentdir) * ' ' + '/'
-        relpath = os.path.join(currentdir, pathseg)
-        abspath = os.path.join(projroot, relpath)
+        # Remember to sanitize for slash unity. We write unix separators
+        # and then translate back to widnows when we need it.
+        relpath = os.path.join(currentdir, pathseg).replace('\\', '/')
+        abspath = os.path.join(projroot, relpath).replace('\\', '/')
         if os.path.isfile(abspath):
             log.debug(spaces + relpath)
             filedict[relpath] = { 'src': abspath }
