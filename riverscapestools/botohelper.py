@@ -171,6 +171,20 @@ def s3FileUpload(bucket, key, filepath):
     log.info("Upload Completed: {0}".format(filepath))
 
 
+def s3FileDelete(bucket, key):
+    log = Logger('S3FileDelete')
+
+    log.info("Deleting: {0} ==> ".format(key))
+    # This step prints straight to stdout and does not log
+    s3.delete_object(bucket, key)
+    log.info("S3 Deletion Completed: {0}".format(key))
+
+def localDelete(filepath):
+    dir = os.path.dirname(filepath)
+    os.remove(filepath)
+    # now walk backwards and clean up empty folders
+    os.removedirs(dir)
+
 def s3FileDownload(bucket, key, filepath):
     """
     Just upload one file using Boto3
@@ -334,10 +348,10 @@ class S3Operation:
             s3FileDownload(self.bucket, remotekey, localpath)
 
         elif self.op == self.FileOps.DELETE_LOCAL:
-            self.log.info("   Deleting local file.")
+            s3FileDelete(self.bucket, remotekey)
 
         elif self.op == self.FileOps.DELETE_REMOTE:
-            self.log.info("   Deleting remote file.")
+            localDelete(localpath)
 
     def __repr__(self):
         forcestr = "(FORCE)" if self.force else ""
