@@ -81,7 +81,12 @@ class Progress(object):
                 self.getSize()
             # p.set(self.percentdone)
             self.p.progress = self.percentdone
-            sys.stdout.write(
-                "\r       {0} --> {3} {1} bytes of {2} transferred".format(
-                    self._basename, format(self._seen_so_far, ",d"), format(self._filesize, ",d"), str(self.p)) )
+            if (self.percentdone < 100):
+                sys.stdout.write(
+                    "\r       {0} --> {3} {1} bytes of {2} transferred".format(
+                        self._basename, format(self._seen_so_far, ",d"), format(self._filesize, ",d"), str(self.p)) )
+            else:
+                sys.stdout.write(
+                    "\r       100% Complete".format(
+                        self._basename, format(self._seen_so_far, ",d"), format(self._filesize, ",d"), str(self.p)) )
             sys.stdout.flush()

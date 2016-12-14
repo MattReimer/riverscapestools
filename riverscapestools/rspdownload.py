@@ -1,9 +1,9 @@
 import argparse
 from settings import defaults, getDataDir
-from os import path, getenv, makedirs
+from os import path
 from userinput import *
 from s3.operations import S3Operation
-from s3.walkers import s3BuildOps
+from s3.walkers import s3BuildOps, menuwalk
 from program import Program
 from logger import Logger
 
@@ -15,11 +15,9 @@ def rspdownload(args):
 
     log.title('STARTING PYTHON DOWNLOADER', "=")
 
-    downloadPath = program.menuWalk()
-
+    downloadPath = menuwalk(program)
     assert downloadPath, "No Product chosen. Exiting"
 
-    log.info('Found download path: {0}'.format('/'.join(downloadPath)))
     keyprefix = '/'.join(downloadPath)
     conf = {
         "delete": args.delete,
@@ -30,14 +28,10 @@ def rspdownload(args):
         "bucket": program.Bucket
     }
 
-    log.title('The following operations are queued:')
-    log.info('From: s3://{0}/{1}'.format(program.Bucket, conf['keyprefix']))
-    log.info('To  : {0}\n'.format(conf['localroot']))
-
     s3ops = s3BuildOps(conf)
 
-    result = query_yes_no("ARE YOU SURE?")
-    # result = True
+    log.title('Please Confirm that you wish to proceed?')
+    result = query_yes_no("Begin?")
 
     if result:
         for key in s3ops:
@@ -50,7 +44,7 @@ def main():
     # parse command line options
     parser = argparse.ArgumentParser()
     parser.add_argument('--datadir',
-                        help='Local path to the root of the program on your local drive')
+                        help='Local path to the root of the program on your local drive. You can omit this argument if you have `{0}` set as an environment variable.'.format(defaults.DataENVName))
     parser.add_argument('--program',
                         default=defaults.ProgramXML,
                         help='Path or url to the Program XML file (optional)')

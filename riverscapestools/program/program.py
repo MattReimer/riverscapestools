@@ -242,58 +242,8 @@ class Program():
                 newpath = currpath[:].append(el)
                 self.progtos3path(progpath, level+1, paths)
 
-
-    def menuWalk(self, nodes=None, currpath=[]):
-        """
-        Walks through the program letting users choose if it's a level
-        or specify if it's a container It returns a set of program paths
-        that we then need to go and lookup to make our download queue
-        :param currlevelObj:
-        :param path:
-        :return:
-        """
-
-        if nodes is None:
-            nodes = [self.Hierarchy]
-
-        name = nodes[0]['node']['name'] if len(nodes) == 1 else ""
-
-        # Get the list at the current path
-        pathstr = '/'.join(currpath) + '/' if len(currpath) > 0 else ""
-        levellist = s3GetFolderList(self.Bucket, pathstr)
-        querystr = "Collection Choice: {0}{1}".format(pathstr, name)
-        choicename = querychoices(querystr, levellist, "Select:")
-        currpath.append(choicename)
-
-        if len(nodes) > 1:
-            node = getnodekeyval(nodes, 'folder', choicename)
-        else:
-            node = nodes[0]
-
-        if node['type'] == 'product':
-            pathstr = '/'.join(currpath) + '/' if len(currpath) > 0 else ""
-            query = "Product Found: {0}\nDownload?".format(pathstr)
-            result = query_yes_no(query)
-            if result:
-                return currpath
-            else:
-                return None
-        # No we've made out choice. We need to move on.
-        elif 'children' in node and len(node['children']) > 0:
-            child1 = node['children'][0]
-            if child1['type'] == 'collection':
-                return self.menuWalk([child1], currpath[:])
-            elif child1['type'] == 'group':
-                return self.menuWalk(node['children'], currpath[:])
-            elif child1['type'] == 'product':
-                return self.menuWalk(node['children'], currpath[:])
-
-
 def _strnullorempty(str):
     return str is None or len(str.strip()) == 0
-
-def getnodekeyval(thelist, key, val):
-    return next(x for x in thelist if x['node'][key] == val)
 
 def getkeyval(thelist, key, val):
     return next(x for x in thelist if x[key] == val)

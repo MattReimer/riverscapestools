@@ -47,16 +47,23 @@ class S3Operation:
         self.bucket = conf['bucket']
         self.direction = conf['direction']
         self.keyprefix = conf['keyprefix']
+        self.s3size = 0
 
         # And the final paths we use:
         self.abspath = self.getAbsLocalPath()
         self.fullkey = self.getS3Key()
 
+        # The remote size (if it exists) helps us figure out percent done
+        if 'dst' in fileobj:
+            self.s3size = fileobj['dst']['Size']
+
         # Figure out what we have
         if 'src' in fileobj and 'dst' not in fileobj:
             self.filestate = self.FileState.LOCALONLY
+
         if 'src' not in fileobj and 'dst' in fileobj:
             self.filestate = self.FileState.REMOTEONLY
+
         if 'src' in fileobj and 'dst' in fileobj:
             if s3issame(fileobj['src'], fileobj['dst']):
                 self.filestate = self.FileState.SAME
@@ -129,9 +136,9 @@ class S3Operation:
         """
         When we print this class as a string this is what we output
         """
-        deletestr = "(FORCE)" if self.delete else ""
-        opstr = "{0:10s} ={2}=> {1:10s}".format(self.filestate, self.op, deletestr)
-        return "[{0:16s}] ./{1} ".format(opstr.strip(), self.key)
+        forcestr = "(FORCE)" if self.force else ""
+        opstr = "{0:12s} ={2}=> {1:10s}".format(self.filestate, self.op, forcestr)
+        return "./{1:60s} [ {0:21s} ]".format(opstr.strip(), self.key)
 
 
     def delete_remote(self):
@@ -182,7 +189,7 @@ class S3Operation:
         # This step prints straight to stdout and does not log
         self.s3.download(self.fullkey, self.abspath)
         print ""
-        log.info("Download Completed: {0}".format(self.abspath))
+        log.debug("Download Completed: {0}".format(self.abspath))
 
     def upload(self):
         """
@@ -198,7 +205,7 @@ class S3Operation:
         # This step prints straight to stdout and does not log
         self.s3.upload(self.abspath, self.fullkey)
         print ""
-        log.info("Upload Completed: {0}".format(self.abspath))
+        log.debug("Upload Completed: {0}".format(self.abspath))
 
 
 

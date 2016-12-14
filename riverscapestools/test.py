@@ -13,7 +13,7 @@ class TestuserInput(unittest.TestCase):
             'Y',
             'Y'])
 
-        scaffold = init(datadir='../test/logs/download_fhm.log/test/dataDir', logfile='./test/logs/download_fhm.log')
+        scaffold = init(datadir='./test/dataDir', logfile='./test/logs/download_fhm.log')
         rspdownload(scaffold.args)
         self.assertTrue(True)
 
@@ -25,7 +25,7 @@ class TestuserInput(unittest.TestCase):
             'Y',
             'Y'])
 
-        scaffold = init(datadir='../test/logs/download_fhm.log/test/dataDir', logfile='./test/logs/download_gcd.log')
+        scaffold = init(datadir='./test/dataDir', logfile='./test/logs/download_gcd.log')
         rspdownload(scaffold.args)
         self.assertTrue(True)
 
@@ -36,7 +36,7 @@ class TestuserInput(unittest.TestCase):
             'Y',
             'Y'])
 
-        scaffold = init(datadir='../test/logs/download_fhm.log/test/dataDir', logfile='./test/logs/download_vbet.log')
+        scaffold = init(datadir='./test/dataDir', logfile='./test/logs/download_vbet.log')
         rspdownload(scaffold.args)
         self.assertTrue(True)
 

@@ -1,5 +1,6 @@
 import os
 from riverscapestools import Logger
+from riverscapestools.userinput import querychoices, query_yes_no
 from transfers import Transfer
 from operations import S3Operation
 
@@ -14,13 +15,29 @@ def s3BuildOps(conf):
     """
     s3 = Transfer(conf['bucket'])
     opstore = {}
+    log = Logger("s3BuildOps")
     prefix = "{0}/".format(conf['keyprefix']).replace("//", "/")
+
+    log.title('The following locations were found:')
+    if conf['direction'] == S3Operation.Direction.UP:
+        tostr = 's3://{0}/{1}'.format(conf['bucket'], conf['keyprefix'])
+        fromstr = conf['localroot']
+    else:
+        fromstr = 's3://{0}/{1}'.format(conf['bucket'], conf['keyprefix'])
+        tostr = conf['localroot']
+    log.info('FROM: {0}'.format(fromstr))
+    log.info('TO  : {0}'.format(tostr))
+
+
+    log.title('The following operations are queued:')
+
     response = s3.list(prefix)
 
     # Get all the files we have locally
     files = {}
     if os.path.isdir(conf['localroot']):
-        files = localProductWalker(conf['localroot'])
+        files = {}
+        localProductWalker(conf['localroot'], files)
 
     # Fill in any files we find on the remote
     if 'Contents' in response:
@@ -35,9 +52,13 @@ def s3BuildOps(conf):
         fileobj = files[relname]
         opstore[relname] = S3Operation(relname, fileobj, conf)
 
+    if len(opstore) == 0:
+        log.info("-- NO Operations Queued --")
+
+
     return opstore
 
-def localProductWalker(projroot, currentdir="", filedir=None):
+def localProductWalker(projroot, filedict, currentdir=""):
     """
     This method has a similar recursive structure to s3FolderUpload
     but we're keeping it separate since it is only used to visualize
@@ -46,9 +67,6 @@ def localProductWalker(projroot, currentdir="", filedir=None):
     :param first:
     :return:
     """
-    if not filedir:
-        filedir = {}
-
     log = Logger('localProdWalk')
     for pathseg in os.listdir(os.path.join(projroot, currentdir)):
         spaces = len(currentdir) * ' ' + '/'
@@ -56,11 +74,10 @@ def localProductWalker(projroot, currentdir="", filedir=None):
         abspath = os.path.join(projroot, relpath)
         if os.path.isfile(abspath):
             log.debug(spaces + relpath)
-            filedir[relpath] = { 'src': abspath }
+            filedict[relpath] = { 'src': abspath }
         elif os.path.isdir(abspath):
             log.debug(spaces + pathseg + '/')
-            localProductWalker(projroot, relpath, filedir)
-    return filedir
+            localProductWalker(projroot, filedict, relpath)
 
 
 def s3GetFolderList(bucket, prefix):
@@ -121,3 +138,47 @@ def s3ProductWalker(bucket, patharr, currpath=[], currlevel=0):
                 if os.path.splitext(c['Key'])[1] == '.xml':
                     log.info('Project: {0} (Modified: {1})'.format(c['Key'], c['LastModified']))
         return
+
+def menuwalk(program, nodes=None, currpath=[]):
+    """
+    Walks through the program letting users choose if it's a level
+    or specify if it's a container It returns a set of program paths
+    that we then need to go and lookup to make our download queue
+    :param currlevelObj:
+    :param path:
+    :return:
+    """
+    log = Logger('menuwalk')
+    if nodes is None:
+        nodes = [program.Hierarchy]
+
+    name = nodes[0]['node']['name'] if len(nodes) == 1 else ""
+
+    # Get the list at the current path
+    pathstr = '/'.join(currpath) + '/' if len(currpath) > 0 else ""
+    levellist = s3GetFolderList(program.Bucket, pathstr)
+    querystr = "Collection Choice: {0}{1}".format(pathstr, name)
+    choicename = querychoices(querystr, levellist, "Select:")
+    currpath.append(choicename)
+
+    if len(nodes) > 1:
+        node = getnodekeyval(nodes, 'folder', choicename)
+    else:
+        node = nodes[0]
+
+    if node['type'] == 'product':
+        pathstr = '/'.join(currpath) + '/' if len(currpath) > 0 else ""
+        log.info("\nProduct Found: {0}".format(pathstr))
+        return currpath
+
+    # No we've made out choice. We need to move on.
+    elif 'children' in node and len(node['children']) > 0:
+        # child1 = node['children'][0]
+        children = node['children']
+        # if child1['type'] == 'collection':
+        #     chil
+        return menuwalk(program, children, currpath[:])
+
+
+def getnodekeyval(thelist, key, val):
+    return next(x for x in thelist if x['node'][key] == val)

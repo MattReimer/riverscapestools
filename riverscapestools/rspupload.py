@@ -8,7 +8,6 @@ from logger import Logger
 from program import *
 from settings import defaults
 
-
 def rspupload(args):
     """
     :param inputRas:
@@ -27,10 +26,6 @@ def rspupload(args):
 
     keyprefix = projectObj.getPath(program)
 
-    log.title('The following operations are queued:')
-    log.info('From: {0}'.format(projectroot))
-    log.info('To  : s3://{0}/{1}\n'.format(program.Bucket, keyprefix))
-
     conf = {
         "delete": args.delete or False,
         "force": args.force or False,
@@ -42,8 +37,9 @@ def rspupload(args):
 
     s3ops = s3BuildOps(conf)
 
-    result = query_yes_no("ARE YOU SURE?")
-    # result = True
+    log.title('Please Confirm that you wish to proceed?')
+    result = query_yes_no("Begin?")
+
 
     if result:
         for key in s3ops:
