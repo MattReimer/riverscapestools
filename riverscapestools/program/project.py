@@ -1,4 +1,4 @@
-from loghelper import Logger
+from riverscapestools import Logger
 import xml.etree.ElementTree as ET
 
 class Project():

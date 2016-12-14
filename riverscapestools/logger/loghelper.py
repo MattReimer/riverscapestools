@@ -9,28 +9,33 @@ class _LoggerSingleton:
 
         def __init__(self):
             self.initialized = False
+            self.logfile = False
             self.verbose = False
+            self.logger = None
 
         def setup(self, logfile, verbose=False):
             self.initialized = True
             self.verbose = verbose
 
-            logDir = os.path.dirname(logfile)
-            if len(logDir) > 0 and not os.path.exists(logDir):
-                os.makedirs(logDir)
+            if len(logfile) > 0:
+                # We also write to a regular TXT log using python's standard library
+                loglevel = logging.INFO if not verbose else logging.DEBUG
+                self.logger = logging.getLogger()
 
-            # We also write to a regular TXT log using python's standard library
-            loglevel = logging.INFO if not verbose else logging.DEBUG
-            self.logger = logging.getLogger()
+                for hdlr in self.logger.handlers[:]:  # remove all old handlers
+                    self.logger.removeHandler(hdlr)
 
-            for hdlr in self.logger.handlers[:]:  # remove all old handlers
-                self.logger.removeHandler(hdlr)
+                self.logfile = True
+                logDir = os.path.dirname(logfile)
+                if len(logDir) > 0 and not os.path.exists(logDir):
+                    os.makedirs(logDir)
 
-            logging.basicConfig(level=loglevel,
-                                filemode='w',
-                                format='%(asctime)s %(levelname)-8s %(message)s',
-                                datefmt='%Y-%m-%d %H:%M:%S',
-                                filename=logfile)
+                logging.basicConfig(level=loglevel,
+                                    filemode='w',
+                                    format='%(asctime)s %(levelname)-8s %(message)s',
+                                    datefmt='%Y-%m-%d %H:%M:%S',
+                                    filename=logfile)
+
 
         def logprint(self, message, method="", severity="info", exception=None):
             """
@@ -61,7 +66,7 @@ class _LoggerSingleton:
             print msg
 
             # If we haven't set up a logger then we're done here. Don't write to any files
-            if not self.initialized:
+            if not self.initialized or not self.logfile:
                 return
 
             # Write to log file

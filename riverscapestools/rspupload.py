@@ -2,10 +2,10 @@ import argparse
 import sys
 from os import path
 from userinput import query_yes_no
-from botohelper import s3BuildOps, S3Operation
-from loghelper import Logger
-from program import Program
-from project import Project
+from s3.operations import S3Operation
+from s3.walkers import s3BuildOps
+from logger import Logger
+from program import *
 
 def rspupload(args):
     """
@@ -19,7 +19,7 @@ def rspupload(args):
     program = Program(args.program)
     projectroot = path.dirname(path.abspath(args.project.name))
 
-    projectObj = Project(args.project, projectroot)
+    projectObj = Project(args.project.name, projectroot)
 
     log.title('STARTING PYTHON UPLOADER', "=")
 

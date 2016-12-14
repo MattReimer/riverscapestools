@@ -17,3 +17,5 @@
 gs
 
 *.egg-info
+
+riverscapestools/test/datadir

@@ -1,8 +1,9 @@
-import re
 import urllib2
+import re
 import xml.etree.ElementTree as ET
-from botohelper import s3GetFolderList
-from userinput import *
+from riverscapestools.s3.walkers import s3GetFolderList
+from riverscapestools.userinput import *
+from riverscapestools import Logger
 
 class Program():
 

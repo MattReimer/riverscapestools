@@ -1,30 +1,72 @@
 import unittest
+import __builtin__
 
 class TestuserInput(unittest.TestCase):
-    TESTARR = [0, 2, 3, 435, 234, "2343"]
-    TESTOBJ = {
-        "test1": "test1val",
-        "test2": "test2val",
-        "test3": "test3val",
-        "test4": "test4val",
-        "test5": "test5val"
-    }
 
-    def test_validateChoices(self):
-        from userinput import validateChoices
+    def test_download(self):
+        from rspdownload import rspdownload
+        inputs = InputFaker(['1', 'Y', 'Y'])
 
-        self.assertTrue(validateChoices('1', self.TESTARR))
-        self.assertTrue(validateChoices('1,', self.TESTARR))
-        self.assertTrue(validateChoices('1,2,3,4,5', self.TESTARR))
+        class args:
+            datadir='./test/dataDir'
+            program='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml'
+            logfile=''
+            force=False
+            verbose=False
 
-        self.assertFalse(validateChoices('-1,2,3,4,5', self.TESTARR))
-        self.assertFalse(validateChoices('1,2,3,10,5', self.TESTARR))
+        rspdownload(args)
+        self.assertTrue(True)
 
-        self.assertTrue(validateChoices('1', self.TESTOBJ))
-        self.assertTrue(validateChoices('1,', self.TESTOBJ))
-        self.assertTrue(validateChoices('1,2,3,4,5', self.TESTOBJ))
+    def test_upload(self):
+        from rspupload import rspupload
+        inputs = InputFaker(['Y'])
 
-        self.assertFalse(validateChoices('-1,2,3,4,5', self.TESTOBJ))
-        self.assertFalse(validateChoices('1,2,3,10,5', self.TESTOBJ))
+        class args:
+            project=FileTypeFaker('./test/SampleProject/fhm_project.xml')
+            program='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml'
+            logfile=''
+            force=True
+            verbose=False
 
-        self.assertFalse(validateChoices('1,SOMETHING', self.TESTOBJ))
+        rspupload(args)
+        self.assertTrue(True)
+
+    def test_list(self):
+        from rsplist import rsplist
+        inputs = InputFaker(['Y'])
+        class args:
+            projectname='FHM'
+            program='https://raw.githubusercontent.com/Riverscapes/Program/master/Program/Riverscapes.xml'
+            logfile=''
+            force=True
+            verbose=False
+
+        rsplist(args)
+        self.assertTrue(True)
+
+class FileTypeFaker:
+    def __init__(self, filename):
+        self.name = filename
+
+class InputFaker:
+    """
+    Just a happy little class to monkey-patch raw_inpout
+    """
+    def __init__(self, inputs):
+        self.counter = 0
+        self.inputs = inputs
+        self.original_raw_input = __builtin__.raw_input
+        print "--------------<MONKEY PATCH>--------------"
+        __builtin__.raw_input = self.FakeIt
+
+    def FakeIt(self):
+        if self.counter >= len(self.inputs):
+            raise ValueError("Ran out of inputs to use")
+        val = self.inputs[self.counter]
+        self.counter += 1
+        return val
+
+    def __exit__(self):
+        # Remember to put things back the way they were
+        print "--------------</MONKEY PATCH>--------------"
+        __builtin__.raw_input = self.original_raw_input

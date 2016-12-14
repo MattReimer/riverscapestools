@@ -1,7 +1,10 @@
 import argparse
+from os import path, getenv, makedirs
 from userinput import *
-from botohelper import s3BuildOps, S3Operation
+from s3.operations import S3Operation
+from s3.walkers import s3BuildOps
 from program import Program
+from logger import Logger
 
 DATA_ENV_VAR = "RSDATADIR"
 
@@ -22,7 +25,7 @@ def rspdownload(args):
     conf = {
         "force": args.force,
         "direction": direction,
-        "localroot": os.path.join(datadir, keyprefix),
+        "localroot": path.join(datadir, keyprefix),
         "keyprefix": keyprefix,
         "bucket": program.Bucket
     }
@@ -45,22 +48,28 @@ def rspdownload(args):
 
 
 def getDataDir(args):
+    """
+    This will either grab the data dir from an environment variable
+    or it will use one that you specify
+    :param args:
+    :return:
+    """
     log = Logger("EnvCheck")
     envroot = None
     if args.datadir:
         log.info("datadir argument found: {0}".format(args.datadir))
         envroot = args.datadir
     else:
-        envroot = os.getenv(DATA_ENV_VAR)
+        envroot = getenv(DATA_ENV_VAR)
 
     # Env set and path exists. All is good.
-    if envroot and os.path.isdir(envroot):
+    if envroot and path.isdir(envroot):
         log.info("Datadir `{0}` exists.".format(envroot))
-    elif envroot and not os.path.isdir(envroot):
+    elif envroot and not path.isdir(envroot):
         log.warning("WARNING: Folder does not exist: {0}".format(envroot))
         if query_yes_no("Create this directory?"):
             try:
-                os.makedirs(envroot)
+                makedirs(envroot)
             except Exception as e:
                 raise Exception("ERROR: Directory `{0}` could not be created.".format(envroot))
     else:

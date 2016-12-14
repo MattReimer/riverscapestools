@@ -1,6 +1,8 @@
-from rspupload import *
-from botohelper import s3ProductWalker
-from loghelper import Logger
+import argparse
+from userinput import *
+from s3.walkers import s3ProductWalker
+from logger import Logger
+
 from program import Program
 
 def rsplist(args):

@@ -1,10 +1,5 @@
 import sys
-import os
-import re
-from loghelper import Logger
-
-def cls():
-    os.system('cls' if os.name=='nt' else 'clear')
+from logger import Logger
 
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
@@ -58,5 +53,4 @@ def querychoices(title, options, question):
                 raise ValueError("Choice is out of range")
             return options[nchoice-1]
         except ValueError as e:
-            sys.stdout.write(
-                "Please respond with a single integer value. \n".format(default))
+            sys.stdout.write("Please respond with a single integer value. \n")
