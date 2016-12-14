@@ -187,7 +187,7 @@ class S3Operation:
 
         log.info("Downloading: {0} ==> ".format(self.fullkey))
         # This step prints straight to stdout and does not log
-        self.s3.download(self.fullkey, self.abspath)
+        self.s3.download(self.fullkey, self.abspath, size=self.s3size)
         print ""
         log.debug("Download Completed: {0}".format(self.abspath))
 

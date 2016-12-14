@@ -29,11 +29,11 @@ class Transfer:
             max_io_queue=10000
         )
 
-    def download(self, key, filepath):
-        self.s3.download_file(self.bucket, key, filepath, Config=self.S3Config, Callback=Progress(filepath, key))
+    def download(self, key, filepath, **kwargs):
+        self.s3.download_file(self.bucket, key, filepath, Config=self.S3Config, Callback=Progress(filepath, **kwargs))
 
     def upload(self, filepath, key):
-        self.s3.upload_file(filepath, self.bucket, key, Config=self.S3Config, Callback=Progress(filepath, key))
+        self.s3.upload_file(filepath, self.bucket, key, Config=self.S3Config, Callback=Progress(filepath))
 
     def delete(self, key):
         self.s3.delete_object(Bucket=self.bucket, Key=key)
@@ -46,10 +46,14 @@ class Progress(object):
     """
     A Little helper class to display the up/download percentage
     """
-    def __init__(self, filename, key):
+    def __init__(self, filename, **kwargs):
         self._filename = filename
         self._basename = os.path.basename(self._filename)
-        self._filesize = self.getSize()
+
+        if 'size' in kwargs:
+            self._filesize = kwargs['size']
+        else:
+            self._filesize = self.getSize()
 
         self._seen_so_far = 0
         self._lock = threading.Lock()
