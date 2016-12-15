@@ -24,8 +24,7 @@ AWS Access Key ID [****************32NS]:
 AWS Secret Access Key [****************SgEe]:
 Default region name [us-west-2]:
 Default output format [json]:
-
-``
+```
 
 ### Step 2: Install `riverscapestools` with pip (Everyone)
 
@@ -116,6 +115,7 @@ optional arguments:
                      (optional)
   --verbose          Get more information in your logs (optional)
 ```
+
 ### Bugs:
 
 Pleae file bugs on [GitHub Issue Tracker](https://github.com/Riverscapes/riverscapestools/issues)
