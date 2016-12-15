@@ -1,6 +1,6 @@
 # Riverscapes S3 Data Tools
 
-This is a simple proof-of-concept tool to get people started with uploading projects into
+This is a simple proof-of-concept tool to get people started with uploading projects into S3 buckets.
 
 ## Installation
 
@@ -9,7 +9,23 @@ This is a simple proof-of-concept tool to get people started with uploading proj
 On windows you need to make sure you are in a bash terminal with:
 * Access to **[pip](https://pip.pypa.io/en/stable/installing/)**. See instructions on how to install QGIS and you can use the console console `.cmd` file from that.
 * You need to have git installed and your `PATH` environment **must** reference the git installation.
-* The [AWS CLI](https://aws.amazon.com/cli/?sc_channel=PS&sc_campaign=acquisition_CA&sc_publisher=google&sc_medium=command_line_b&sc_content=aws_cli_p&sc_detail=aws%20cli&sc_category=command_line&sc_segment=161196437474&sc_matchtype=p&sc_country=CA&s_kwcid=AL!4422!3!161196437474!p!!g!!aws%20cli&ef_id=WFHksAAABLc1JG8i:20161215003248:s) needs to be installed and configured with keys that can access the AWS resources you will be using.
+
+### Step 2: AWS CLI
+
+The [AWS Command Line Interface](https://aws.amazon.com/cli/?sc_channel=PS&sc_campaign=acquisition_CA&sc_publisher=google&sc_medium=command_line_b&sc_content=aws_cli_p&sc_detail=aws%20cli&sc_category=command_line&sc_segment=161196437474&sc_matchtype=p&sc_country=CA&s_kwcid=AL!4422!3!161196437474!p!!g!!aws%20cli&ef_id=WFHksAAABLc1JG8i:20161215003248:s) needs to be installed and configured with keys that can access the AWS resources you will be using.
+
+There are straightforward installation instructions on their website. When it's installed simply run `aws configure` on the command line.
+
+Use your Key and Secret key along with `us-west-2` as the region. For output format just leave the default whatever it is.
+
+```
+c:\> aws configure
+AWS Access Key ID [****************32NS]:
+AWS Secret Access Key [****************SgEe]:
+Default region name [us-west-2]:
+Default output format [json]:
+
+``
 
 ### Step 2: Install `riverscapestools` with pip (Everyone)
 
