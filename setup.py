@@ -25,11 +25,11 @@ with open("README.md", "rb") as f:
 setup(
       name='riverscapestools',
       description='A Riverscapes Uploader tool',
-      url='https://github.com/Riverscapes/rspupload',
+      url='https://github.com/Riverscapes/riverscapestools',
       author='Matt Reimer',
       author_email='matt@northarrowresearch.com',
       license='MIT',
-      packages=['riverscapestools', 'riverscapestools.s3', 'riverscapestools.program', 'riverscapestools.logger'],
+      packages=['riverscapestools', 'riverscapestools.s3', 'riverscapestools.logger', 'riverscapestools.program'],
       zip_safe=False,
       install_requires=install_requires,
       entry_points={
