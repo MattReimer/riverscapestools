@@ -173,7 +173,7 @@ class Program():
 
     def getBucket(self):
         try:
-            self.Bucket = self.DOM.find("MetaData/Meta[@name='s3bucket']").text
+            self.Bucket = self.DOM.find("MetaData/Meta[@name='s3bucket']").text.strip()
             self.log.info("S3 Bucket Detected: {0}".format(self.Bucket))
         except:
             msg = "ERROR: No <Meta Name='s3bucket'>riverscapes</Meta> tag found in program XML"

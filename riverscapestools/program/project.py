@@ -22,7 +22,7 @@ class Project():
         self.log.title('Getting remote path...')
 
         # First let's get the project type
-        projType = self.DOM.find('./ProjectType').text
+        projType = self.DOM.find('./ProjectType').text.strip()
         assert not _strnullorempty(projType), "ERROR: <ProjectType> not found in project XML."
         self.log.info("Project Type Detected: {0}".format(projType))
 
@@ -62,7 +62,7 @@ class Project():
         :return:
         """
         try:
-            val = self.DOM.find("MetaData/Meta[@name='{0}']".format(colname)).text
+            val = self.DOM.find("MetaData/Meta[@name='{0}']".format(colname)).text.strip()
         except AttributeError:
             raise ValueError("ERROR: Could not find <Meta name='{0}'>########</Meta> tag in project XML".format(colname))
         return val
