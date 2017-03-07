@@ -42,7 +42,7 @@ rsplist -h
 
 ### Riverscapes Project Uploader
 
-The project uploader reads the `[project].xml` and tries to find a place for it in the repo based on a `Program.xml` file. The output is verbose and it asks you to confirm everything before it uploads anything.
+The project uploader reads the `project.rs.xml` from inside the the `program` folder you specify and tries to find a place for it in the repo based on a `Program.xml` file. The output is verbose and it asks you to confirm everything before it uploads anything.
 
 Uploads are tested against what's already in the bucket using MD5 and only new files get uploaded.
 
@@ -54,7 +54,8 @@ usage: rspupload [-h] [--program PROGRAM] [--logfile LOGFILE] [--delete]
                  project
 
 positional arguments:
-  project            Path to the project XML file.
+  project            Path to the project folder containing the project xml
+                     file
 
 optional arguments:
   -h, --help         show this help message and exit
