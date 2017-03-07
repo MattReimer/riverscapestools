@@ -18,43 +18,45 @@ def rspupload(args):
     direction = S3Operation.Direction.UP
 
     program = Program(args.program)
-    projectroot = path.dirname(path.abspath(args.project.name))
 
-    projectObj = Project(args.project.name, projectroot)
+    if path.isdir(args.project):
+        projectroot = path.abspath(args.project)
 
-    log.title('STARTING PYTHON UPLOADER', "=")
+        projectObj = Project(projectroot, program.ProjectFile)
 
-    keyprefix = projectObj.getPath(program)
+        log.title('STARTING PYTHON UPLOADER', "=")
 
-    conf = {
-        "delete": args.delete or False,
-        "force": args.force or False,
-        "direction": direction,
-        "localroot": projectroot,
-        "keyprefix": keyprefix,
-        "bucket": program.Bucket
-    }
+        keyprefix = projectObj.getPath(program)
 
-    s3ops = s3BuildOps(conf)
+        conf = {
+            "delete": args.delete or False,
+            "force": args.force or False,
+            "direction": direction,
+            "localroot": projectroot,
+            "keyprefix": keyprefix,
+            "bucket": program.Bucket
+        }
 
-    log.title('Please Confirm that you wish to proceed?')
-    result = query_yes_no("Begin?")
+        s3ops = s3BuildOps(conf)
+
+        log.title('Please Confirm that you wish to proceed?')
+        result = query_yes_no("Begin?")
 
 
-    if result:
-        for key in s3ops:
-            s3ops[key].execute()
+        if result:
+            for key in s3ops:
+                s3ops[key].execute()
+        else:
+            log.info("\n<EXITING> No sync performed\n")
     else:
-        log.info("\n<EXITING> No sync performed\n")
-
-
+        log.error("Path specified is not a valid project folder: {}".format(args.project))
 
 def main():
     # parse command line options
     parser = argparse.ArgumentParser()
     parser.add_argument('project',
-                        help='Path to the project XML file.',
-                        type=argparse.FileType('r'))
+                        help='Path to the project folder containing the project xml file',
+                        type=str)
     parser.add_argument('--program',
                         default=defaults.ProgramXML,
                         help='Path or url to the Program XML file (optional)')

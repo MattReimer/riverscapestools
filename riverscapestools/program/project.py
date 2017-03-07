@@ -1,16 +1,18 @@
 from riverscapestools import Logger
 import xml.etree.ElementTree as ET
+from os import path
 
 class Project():
 
-    def __init__(self, progpath, projectRoot):
+    def __init__(self, projectRoot, projXMLFile):
         self.log = Logger('Project')
         self.DOM = None
-        self.getProgramFromXML(progpath)
+        self.getProgramFromXML(path.join(projectRoot, projXMLFile))
         self.LocalRoot = projectRoot
 
-    def getProgramFromXML(self, progpath):
-        self.DOM = ET.parse(progpath).getroot()
+    def getProgramFromXML(self, progXMLpath):
+        assert path.isfile(progXMLpath), "ERROR: could not find file called: {}".format(progXMLpath)
+        self.DOM = ET.parse(progXMLpath).getroot()
 
     def getPath(self, program):
         """

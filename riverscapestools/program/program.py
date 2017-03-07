@@ -19,6 +19,7 @@ class Program():
 
         # Populate everything
         self.getBucket()
+        self.getProjectFile()
         self.parseCollections()
         self.parseGroups()
         self.parseProducts()
@@ -170,6 +171,15 @@ class Program():
             self.Hierarchy = obj
 
         return obj
+
+    def getProjectFile(self):
+        try:
+            self.ProjectFile = self.DOM.find("MetaData/Meta[@name='projectfile']").text.strip()
+            self.log.info("Project File we're looking for: {0}".format(self.ProjectFile))
+        except:
+            msg = "ERROR: No <Meta Name='projectfile'>project.rs.xml</Meta> tag found in program XML"
+            self.log.error(msg)
+            raise ValueError(msg)
 
     def getBucket(self):
         try:
