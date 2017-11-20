@@ -73,11 +73,9 @@ class Program():
                     'pattern': allow.attrib['pattern'],
                 })
             else:
-                allows.append({
-                    'type': 'fixed',
-                    'name': allow.attrib['name'],
-                    'folder': allow.attrib['folder']
-                })
+                attrs = allow.attrib
+                attrs['type'] = 'fixed'
+                allows.append(attrs)
         return allows
 
     def testAllowedCollection(self, colName, desiredName):
@@ -105,6 +103,9 @@ class Program():
                     self.log.error("Something went wrong with the allow RegEx in the Program XML file", e)
             else:
                 if allow['name'] == desiredName:
+                    bGood = True
+                    continue
+                elif 'aliases' in allow and desiredName in allow['aliases'].split(','):
                     bGood = True
                     continue
 

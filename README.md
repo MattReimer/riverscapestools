@@ -117,6 +117,16 @@ optional arguments:
   --verbose          Get more information in your logs (optional)
 ```
 
+
+### Developing
+
+To install as a local pip install 
+
+``` bash
+pip install -e . --user
+
+```
+
 ### Bugs:
 
 Pleae file bugs on [GitHub Issue Tracker](https://github.com/Riverscapes/riverscapestools/issues)
